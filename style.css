@@ -352,10 +352,13 @@ html[data-theme="Teal"] {
 	--editor-font-size: 0.95;
 }
 
+#editor-container[data-font="System Bold"] {
+	--editor-font-family: 'System Bold', monospace;
+	--editor-font-size: 0.65;
+}
 #editor-container[data-font="custom"] {
 	--editor-font-family: var(--custom-font-family, monospace);
 }
-
 /* ==[ Common ] =========================================================================================== */
 
 html {
@@ -1301,6 +1304,7 @@ button[name="close"] {
 		resize: none;
 	}
 }
+
 
 
 
