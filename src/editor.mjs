@@ -64,7 +64,7 @@ const editorView = initValue => new EditorView({
 export class Editor {
 	constructor() {
 		this.container = null;
-		this.defaultValue = '10*(t>>7|t|t>>6)+4*(t&t>>13|t>>6)';
+		this.defaultValue = 't*t*4*(t>>9)/((t>>14&3)+4)';
 		this.errorElem = null;
 		this.view = null;
 		this.loadingOverlay = null;
@@ -111,3 +111,4 @@ export class Editor {
 		});
 	}
 }
+
