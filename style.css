@@ -55,6 +55,48 @@
 	font-weight: normal;
 	font-style: normal;
 }
+
+@font-face {
+	font-family: 'In your face, joffrey!';
+	src: url('./Fonts/In your face, joffrey!.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'AlphabetNumberLoreFontV3Regular';
+	src: url('./Fonts/AlphabetNumberLoreFontV3Regular.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'AmongUs-Regular';
+	src: url('./Fonts/AmongUs-Regular.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'AmongUsFilled-Regular';
+	src: url('./Fonts/AmongUsFilled-Regular.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'KlaskyCsupo';
+	src: url('./Fonts/KlaskyCsupo.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Clasky_Sans';
+	src: url('./Fonts/Clasky_Sans.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
 /* ==[ Themes ] =========================================================================================== */
 
 :root {
@@ -352,10 +394,41 @@ html[data-theme="Teal"] {
 	--editor-font-size: 0.95;
 }
 
+#editor-container[data-font="In your face, joffrey!"] {
+	--editor-font-family: 'In your face, joffrey!', monospace;
+	--editor-font-size: 1.0;
+}
+
 #editor-container[data-font="System Bold"] {
 	--editor-font-family: 'System Bold', monospace;
-	--editor-font-size: 0.65;
+	--editor-font-size: 1.0;
 }
+
+#editor-container[data-font="AmongUs-Regular"] {
+	--editor-font-family: 'AmongUs-Regular', monospace;
+	--editor-font-size: 1.0;
+}
+
+#editor-container[data-font="AmongUsFilled-Regular"] {
+	--editor-font-family: 'AmongUsFilled-Regular', monospace;
+	--editor-font-size: 1.0;
+}
+
+#editor-container[data-font="Clasky_Sans"] {
+	--editor-font-family: 'Clasky_Sans', monospace;
+	--editor-font-size: 1.0;
+}
+
+#editor-container[data-font="KlaskyCsupo"] {
+	--editor-font-family: 'KlaskyCsupo', monospace;
+	--editor-font-size: 1.0;
+}
+
+#editor-container[data-font="AlphabetNumberLoreFontV3Regular"] {
+	--editor-font-family: 'AlphabetNumberLoreFontV3Regular', monospace;
+	--editor-font-size: 1.0;
+}
+
 #editor-container[data-font="custom"] {
 	--editor-font-family: var(--custom-font-family, monospace);
 }
@@ -1304,6 +1377,7 @@ button[name="close"] {
 		resize: none;
 	}
 }
+
 
 
 
