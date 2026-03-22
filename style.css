@@ -329,6 +329,34 @@ html[data-theme="Teal"] {
 	--library-header-hover-color: #94fbff;
 	--link: #8efbff;
 }
+html[data-theme="St. Patrick"] {
+	--button-hover-color: #7CFF81;
+	--canvas-border: linear-gradient(#00ff00, #00ff00) 1;
+	--canvas-button: linear-gradient(to bottom, #00ae00, #002700);
+	--canvas-button-hover: linear-gradient(to bottom, #00df00, #004300) !important;
+	--code-author: #ffff00;
+	--code-button: linear-gradient(to bottom, #009300, #002200);
+	--code-button-border: #ffff00;
+	--code-button-hover: linear-gradient(to bottom, #00c100, #003800);
+	--control-button: linear-gradient(to bottom, #00c100, #004600);
+	--control-button-active: linear-gradient(to bottom, #008800, #003100);
+	--control-button-border: #ffff00;
+	--control-button-hover: linear-gradient(to bottom, #00db00, #003600);
+	--control-text: linear-gradient(to top, #007300, #003600);
+	--control-text-hover: linear-gradient(to top, #008d00, #004c00);
+	--control-volume: linear-gradient(to bottom, #00b700, #003b00);
+	--control-volume-hover: linear-gradient(to bottom, #00d700, #004900);
+	--editor: #ffff00;
+	--entry: #ffff00;
+	--entry-border: linear-gradient(to right, #00ff00, #ffff00);
+	--focus: #aafcff;
+	--library-header: linear-gradient(to bottom, #008000, #002800);
+	--library-header-hover: linear-gradient(to bottom, #009f00, #004a00);
+	--library-header-hover-color: #ffff00;
+	--link: #8efbff;
+}
+
+
 
 #editor-container[data-theme="One Dark"] {
 	--code-definition: #abb2bf;
@@ -729,7 +757,7 @@ button[name="close"] {
 	max-width: 100vw;
 	max-height: calc(100% - 256px);
 	overflow-y: scroll;
-	color: #f92672;
+	color: #ff0000;
 	font: 14px/14px monospace;
 	letter-spacing:-1px;
 }
@@ -737,7 +765,7 @@ button[name="close"] {
 #error-console {
 	margin: 0;
 	overflow-y: scroll;
-	color: #f92672;
+	color: #00ff00;
 	font: 14px/14px monospace;
 	letter-spacing:-1px;
 	position: fixed;
