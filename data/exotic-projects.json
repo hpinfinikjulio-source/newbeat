@@ -2,7 +2,7 @@
   "sections": [
     {
       "name": "D3nschot",
-      "count": 5,
+      "count": 6,
       "expanded": true,
       "projects": [
         {
@@ -44,6 +44,16 @@
           "date": "2025-09-15",
           "codeFile": "Hmmm CHRUNCHY.tb3",
           "requires_audio": true
+        },
+        {
+          "id": 6,
+          "name": "Phase fucker",
+          "date": "2026-03-12",
+          "sampleRate": 48000,
+          "mode": "Funcbeat",
+          "codeFile": "something.js",
+          "requires_audio": true,
+          "long_code": true
         }
       ]
     }
