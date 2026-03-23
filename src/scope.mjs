@@ -11,15 +11,31 @@ export class Scope {
 		this.canvasPlayButton = null;
 		this.canvasTimeCursor = null;
 		this.canvasWidth = 1024;
-		this.colorChannels = null;
-		this.colorDiagram = null;
-		this.colorWaveform = null;
+		this.colorDiagramLeft = null;
+		this.colorDiagramCenter = null;
+		this.colorDiagramMono = null;
+		this.colorDiagramRight = null;
+		this.colorWaveformLeft = null;
+		this.colorWaveformCenter = null;
+		this.colorWaveformMono = null;
+		this.colorWaveformRight = null;
 		this.drawBuffer = [];
 		this.drawEndBuffer = [];
 		this.drawMode = 'Combined';
 		this.drawScale = 5;
 		this.analyser = null;
 		this.analyserData = null;
+		this.analyserLeft = null;
+		this.analyserCenter = null;
+		this.analyserRight = null;
+		this.analyserLeftData = null;
+		this.analyserCenterData = null;
+		this.analyserRightData = null;
+		this.showExtraFftChannels = false;
+		this.showMonoFft = true;
+		this.showFftFill = false;
+		this.fftBlendMode = 'source-over';
+		this.fftBinSize = 1024;
 	}
 	get timeCursorEnabled() {
 		return globalThis.bytebeat.sampleRate >> this.drawScale < 2000;
@@ -77,27 +93,64 @@ export class Scope {
 			}
 		}
 		// FFT visualization
-		if(this.drawMode === 'FFT_1024' && this.analyser && this.analyserData) {
-			this.analyser.getByteFrequencyData(this.analyserData);
-			this.clearCanvas();
-			this.canvasCtx.beginPath();
-			const wColor = this.colorWaveform;
-			this.canvasCtx.strokeStyle = `rgb(${ wColor[0] },${ wColor[1] },${ wColor[2] })`;
-			this.canvasCtx.lineWidth = 1;
-			const binCount = this.analyserData.length;
-			const logMin = 1;
-			const logMax = Math.log(binCount + 1);
-			for(let i = 0; i < binCount; i++) {
-				const value = this.analyserData[i];
-				const y = height - (value / 255) * height;
-				const x = (Math.log(i + logMin) / logMax) * width;
-				if(i === 0) {
-					this.canvasCtx.moveTo(x, y);
-				} else {
-					this.canvasCtx.lineTo(x, y);
+		if(this.drawMode === 'FFT' && this.analyser && this.analyserData) {
+			const resolveBlendMode = mode => (mode === 'subtract' ? 'difference' : (mode || 'source-over'));
+			const drawFftLine = (data, color, alpha = 1, fillBlendMode = 'source-over', lineBlendMode = 'source-over') => {
+				this.canvasCtx.beginPath();
+				this.canvasCtx.strokeStyle = `rgb(${ color[0] },${ color[1] },${ color[2] })`;
+				this.canvasCtx.globalAlpha = alpha;
+				this.canvasCtx.lineWidth = 1;
+				const binCount = data.length;
+				const logMin = 1;
+				const logMax = Math.log(binCount + 1);
+				for(let i = 0; i < binCount; i++) {
+					const value = data[i];
+					const y = height - (value / 255) * height;
+					const x = (Math.log(i + logMin) / logMax) * width;
+					if(i === 0) {
+						this.canvasCtx.moveTo(x, y);
+					} else {
+						this.canvasCtx.lineTo(x, y);
+					}
 				}
+				if(this.showFftFill) {
+					this.canvasCtx.globalCompositeOperation = resolveBlendMode(fillBlendMode);
+					this.canvasCtx.lineTo(width, height);
+					this.canvasCtx.lineTo(0, height);
+					this.canvasCtx.closePath();
+					this.canvasCtx.fillStyle = `rgb(${ color[0] },${ color[1] },${ color[2] })`;
+					this.canvasCtx.fill();
+				} else {
+					this.canvasCtx.globalCompositeOperation = resolveBlendMode(lineBlendMode);
+					this.canvasCtx.stroke();
+				}
+				this.canvasCtx.globalAlpha = 1;
+			};
+			this.analyser.getByteFrequencyData(this.analyserData);
+			if(this.analyserLeft && this.analyserLeftData) {
+				this.analyserLeft.getByteFrequencyData(this.analyserLeftData);
 			}
-			this.canvasCtx.stroke();
+			if(this.analyserCenter && this.analyserCenterData) {
+				this.analyserCenter.getByteFrequencyData(this.analyserCenterData);
+			}
+			if(this.analyserRight && this.analyserRightData) {
+				this.analyserRight.getByteFrequencyData(this.analyserRightData);
+			}
+			this.clearCanvas();
+			const monoColor = this.colorWaveformMono || this.colorWaveformCenter || this.colorWaveformLeft;
+			if(this.showExtraFftChannels && this.analyserLeftData && this.analyserRightData && this.analyserCenterData) {
+				const leftColor = this.colorWaveformLeft || monoColor;
+				const centerColor = this.colorWaveformCenter || monoColor;
+				const rightColor = this.colorWaveformRight || monoColor;
+				drawFftLine(this.analyserLeftData, leftColor, 1, 'lighter', 'lighter');
+				drawFftLine(this.analyserCenterData, centerColor, 1, 'lighter', 'lighter');
+				drawFftLine(this.analyserRightData, rightColor, 1, 'lighter', 'lighter');
+			}
+			if(this.showMonoFft) {
+				drawFftLine(this.analyserData, monoColor, 1, this.fftBlendMode, 'source-over');
+			}
+			this.canvasCtx.globalCompositeOperation = 'source-over';
+			this.canvasCtx.globalCompositeOperation = 'source-over';
 			this.drawBuffer = [{ t: endTime, value: buffer[bufferLen - 1].value }];
 			return;
 		}
@@ -105,17 +158,34 @@ export class Scope {
 		const isCombined = this.drawMode === 'Combined';
 		const isDiagram = this.drawMode === 'Diagram';
 		const isWaveform = this.drawMode === 'Waveform';
-		const { colorDiagram } = this;
-		const colorPoints = this.colorWaveform;
-		const colorWaveform = !isWaveform ? colorPoints : [
-			Math.floor(.6 * colorPoints[0] | 0),
-			Math.floor(.6 * colorPoints[1] | 0),
-			Math.floor(.6 * colorPoints[2] | 0)];
-		let ch, drawDiagramPoint, drawPoint, drawWavePoint;
+		const colorDiagram = [
+			this.colorDiagramLeft,
+			this.colorDiagramCenter,
+			this.colorDiagramRight
+		];
+		const colorPoints = [
+			this.colorWaveformLeft,
+			this.colorWaveformCenter,
+			this.colorWaveformRight
+		];
+		const colorWaveform = colorPoints.map(color =>
+			!isWaveform ? color : [
+				Math.floor(.6 * color[0] | 0),
+				Math.floor(.6 * color[1] | 0),
+				Math.floor(.6 * color[2] | 0)
+			]
+		);
+		const drawDiagramPoint = this.drawBlendPoint;
+		const drawPoint = this.drawBlendPoint;
+		const drawWavePoint = this.drawBlendPoint;
 		for(let i = 0; i < bufferLen; ++i) {
-			const curY = buffer[i].value;
-			const prevY = buffer[i - 1]?.value ?? [NaN, NaN];
-			const isNaNCurY = [isNaN(curY[0]), isNaN(curY[1])];
+			const sample = buffer[i];
+			const curY = sample.value;
+			const outputChannels = Number.isFinite(sample.channels) ? sample.channels : 1;
+			const prevY = buffer[i - 1]?.value ?? [NaN, NaN, NaN];
+			const isNaNCurY = [isNaN(curY[0]), isNaN(curY[1]), isNaN(curY[2])];
+			const isCenterOnlyNaN = isNaNCurY[1] && !isNaNCurY[0] && !isNaNCurY[2];
+			const isMonoLR = outputChannels <= 1 && !isNaNCurY[0] && !isNaNCurY[2];
 			const curTime = buffer[i].t;
 			const nextTime = buffer[i + 1]?.t ?? endTime;
 			const curX = mod(Math.floor(this.getX(isReverse ? nextTime + 1 : curTime)) - startX, width);
@@ -124,7 +194,7 @@ export class Scope {
 			if(isCombined || isDiagram) {
 				diagramSize = Math.max(1, 256 >> scale);
 				diagramStart = diagramSize * mod(curTime, 1 << scale);
-			} else if(isNaNCurY[0] || isNaNCurY[1]) {
+			} else if(!isCenterOnlyNaN && (isNaNCurY[0] || isNaNCurY[1] || isNaNCurY[2])) {
 				// Error value - filling with red color
 				for(let x = curX; x !== nextX; x = mod(x + 1, width)) {
 					for(let y = 0; y < height; ++y) {
@@ -135,36 +205,68 @@ export class Scope {
 					}
 				}
 			}
-			// Select mono or stereo drawing
-			if((curY[0] === curY[1] || isNaNCurY[0] && isNaNCurY[1]) && prevY[0] === prevY[1]) {
-				ch = 1;
-				drawDiagramPoint = isCombined ? this.drawSoftPointMono : this.drawPointMono;
-				drawPoint = this.drawPointMono;
-				drawWavePoint = isCombined ? this.drawPointMono : this.drawSoftPointMono;
-			} else {
-				ch = 2;
-				drawDiagramPoint = isCombined ? this.drawSoftPointStereo : this.drawPointStereo;
-				drawPoint = this.drawPointStereo;
-				drawWavePoint = isCombined ? this.drawPointStereo : this.drawSoftPointStereo;
+			if(isMonoLR && (isCombined || isDiagram || isWaveform)) {
+				const curYCh = curY[0];
+				const monoPoint = this.colorWaveformMono;
+				const monoWave = !isWaveform ? monoPoint : [
+					Math.floor(.6 * monoPoint[0] | 0),
+					Math.floor(.6 * monoPoint[1] | 0),
+					Math.floor(.6 * monoPoint[2] | 0)
+				];
+				if(isCombined || isDiagram) {
+					const value = (curYCh & 255) / 256;
+					const monoDiagram = this.colorDiagramMono;
+					const color = [
+						value * monoDiagram[0] | 0,
+						value * monoDiagram[1] | 0,
+						value * monoDiagram[2] | 0
+					];
+					for(let x = curX; x !== nextX; x = mod(x + 1, width)) {
+						for(let y = 0; y < diagramSize; ++y) {
+							const idx = (drawWidth * (diagramStart + y) + x) << 2;
+							drawDiagramPoint(data, idx, color);
+						}
+					}
+				}
+				if(!isDiagram) {
+					for(let x = curX; x !== nextX; x = mod(x + 1, width)) {
+						drawPoint(data, (drawWidth * (255 - curYCh) + x) << 2, monoPoint);
+					}
+					if(isCombined || isWaveform) {
+						const prevYCh = prevY[0];
+						if(!isNaN(prevYCh)) {
+							const x = isReverse ? mod(Math.floor(this.getX(curTime)) - startX, width) : curX;
+							for(let dy = prevYCh < curYCh ? 1 : -1, y = prevYCh; y !== curYCh; y += dy) {
+								drawWavePoint(data, (drawWidth * (255 - y) + x) << 2, monoWave);
+							}
+						}
+					}
+				}
+				continue;
 			}
-			while(ch--) {
+			for(let ch = 0; ch < 3; ch++) {
 				const curYCh = curY[ch];
-				const colorCh = this.colorChannels;
+				const colorCh = colorPoints[ch];
+				const diagramColorCh = colorDiagram[ch];
+				const waveformColorCh = colorWaveform[ch];
 				// Diagram drawing
 				if(isCombined || isDiagram) {
 					const isNaNCurYCh = isNaNCurY[ch];
 					const value = (curYCh & 255) / 256;
 					const color = [
-						value * colorDiagram[0] | 0,
-						value * colorDiagram[1] | 0,
-						value * colorDiagram[2] | 0];
+						value * diagramColorCh[0] | 0,
+						value * diagramColorCh[1] | 0,
+						value * diagramColorCh[2] | 0
+					];
 					for(let x = curX; x !== nextX; x = mod(x + 1, width)) {
 						for(let y = 0; y < diagramSize; ++y) {
 							const idx = (drawWidth * (diagramStart + y) + x) << 2;
 							if(isNaNCurYCh) {
-								data[idx] = 100; // Error: red color
+								if(!(isCenterOnlyNaN && ch === 1)) {
+									data[idx] = 100; // Error: red color
+								}
 							} else {
-								drawDiagramPoint(data, idx, color, colorCh, ch);
+								drawDiagramPoint(data, idx, color);
 							}
 						}
 					}
@@ -174,7 +276,7 @@ export class Scope {
 				}
 				// Points drawing
 				for(let x = curX; x !== nextX; x = mod(x + 1, width)) {
-					drawPoint(data, (drawWidth * (255 - curYCh) + x) << 2, colorPoints, colorCh, ch);
+					drawPoint(data, (drawWidth * (255 - curYCh) + x) << 2, colorCh);
 				}
 				// Waveform vertical lines drawing
 				if(isCombined || isWaveform) {
@@ -184,7 +286,7 @@ export class Scope {
 					}
 					const x = isReverse ? mod(Math.floor(this.getX(curTime)) - startX, width) : curX;
 					for(let dy = prevYCh < curYCh ? 1 : -1, y = prevYCh; y !== curYCh; y += dy) {
-						drawWavePoint(data, (drawWidth * (255 - y) + x) << 2, colorWaveform, colorCh, ch);
+						drawWavePoint(data, (drawWidth * (255 - y) + x) << 2, waveformColorCh);
 					}
 				}
 			}
@@ -212,23 +314,12 @@ export class Scope {
 		// Clear buffer
 		this.drawBuffer = [{ t: endTime, value: buffer[bufferLen - 1].value }];
 	}
-	drawPointMono(data, i, color) {
+	drawPoint(data, i, color) {
 		data[i++] = color[0];
 		data[i++] = color[1];
 		data[i] = color[2];
 	}
-	drawPointStereo(data, i, color, colorCh, isRight) {
-		if(isRight) {
-			const c1 = colorCh[1];
-			const c2 = colorCh[2];
-			data[i + c1] = color[c1];
-			data[i + c2] = color[c2];
-		} else {
-			const c0 = colorCh[0];
-			data[i + c0] = color[c0];
-		}
-	}
-	drawSoftPointMono(data, i, color) {
+	drawSoftPoint(data, i, color) {
 		if(data[i] || data[i + 1] || data[i + 2]) {
 			return;
 		}
@@ -236,53 +327,10 @@ export class Scope {
 		data[i++] = color[1];
 		data[i] = color[2];
 	}
-	drawSoftPointStereo(data, i, color, colorCh, isRight) {
-		if(isRight) {
-			let i1, i2, c1, c2;
-			if(data[i1 = i + (c1 = colorCh[1])] || data[i2 = i + (c2 = colorCh[2])]) {
-				return;
-			}
-			data[i1] = color[c1];
-			data[i2] = color[c2];
-			return;
-		}
-		const c0 = colorCh[0];
-		const i0 = i + c0;
-		if(data[i0]) {
-			return;
-		}
-		data[i0] = color[c0];
-	}
-	getColorTest(colorMode, newValue) {
-		if(newValue) {
-			this[colorMode] = [
-				parseInt(newValue.substr(1, 2), 16),
-				parseInt(newValue.substr(3, 2), 16),
-				parseInt(newValue.substr(5, 2), 16)];
-		}
-		let rgbTxt, leftColor, rightColor;
-		const value = this[colorMode];
-		const c = this.colorChannels;
-		switch(c[0]) {
-		case 0:
-			rgbTxt = ['R', 'G', 'B']; // [Left, Rigtht1, Right2]
-			leftColor = `${ value[c[0]] }, 0, 0`;
-			rightColor = `0, ${ value[c[1]] }, ${ value[c[2]] }`;
-			break;
-		case 2:
-			rgbTxt = ['B', 'R', 'G'];
-			leftColor = `0, 0, ${ value[c[0]] }`;
-			rightColor = `${ value[c[1]] }, ${ value[c[2]] }, 0`;
-			break;
-		default:
-			rgbTxt = ['G', 'R', 'B'];
-			leftColor = `0, ${ value[c[0]] }, 0`;
-			rightColor = `${ value[c[1]] }, 0, ${ value[c[2]] }`;
-		}
-		return `[ Left <span class="control-color-test" style="background: rgb(${ leftColor });"></span>
-			${ rgbTxt[0] }=${ value[c[0]] }, Right
-			<span class="control-color-test" style="background: rgb(${ rightColor });"></span>
-			${ rgbTxt[1] }=${ value[c[1]] } + ${ rgbTxt[2] }=${ value[c[2]] } ]`;
+	drawBlendPoint(data, i, color) {
+		data[i] = Math.min(255, data[i] + color[0]);
+		data[i + 1] = Math.min(255, data[i + 1] + color[1]);
+		data[i + 2] = Math.min(255, data[i + 2] + color[2]);
 	}
 	getX(t) {
 		return t / (1 << this.drawScale);

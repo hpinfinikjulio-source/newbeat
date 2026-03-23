@@ -19,15 +19,27 @@ globalThis.bytebeat = new class {
 		this.byteSample = 0;
 		this.defaultSettings = {
 			codeStyle: 'Atom Dark',
+			audioCtxSampleRate: 48000,
+			audioCtxBufferSize: 0,
+			showExtraFftChannels: false,
+			showMonoFft: true,
+			showFftFill: false,
+			fftBlendMode: 'lighter',
 			fontFamily: 'default',
 			customFont: 'monospace',
 			fontSize: 1,
-			colorDiagram: '#0080ff',
-			colorStereo: 1,
+			colorDiagramLeft: '#008000',
+			colorDiagramCenter: '#0080ff',
+			colorDiagramMono: '#00ffff',
+			colorDiagramRight: '#0000ff',
 			colorTimeCursor: '#80bbff',
-			colorWaveform: '#ffffff',
+			colorWaveformLeft: '#00ff00',
+			colorWaveformCenter: '#ffffff',
+			colorWaveformMono: '#ffffff',
+			colorWaveformRight: '#ff00ff',
 			drawMode: scope.drawMode,
 			drawScale: scope.drawScale,
+			fftBinSize: 1024,
 			isSeconds: false,
 			showAllSongs: library.showAllSongs,
 			srDivisor: 1,
@@ -38,6 +50,7 @@ globalThis.bytebeat = new class {
 		this.isCompilationError = false;
 		this.isNeedClear = false;
 		this.isPlaying = false;
+		this.isOfflineRendering = false;
 		this.isRecording = false;
 		this.mode = 'Bytebeat';
 		this.playbackSpeed = 1;
@@ -52,20 +65,31 @@ globalThis.bytebeat = new class {
 		case 'change':
 			switch(elem.id) {
 			case 'control-code-style': this.setCodeStyle(elem.value); break;
+			case 'control-audioctx-samplerate': this.setAudioCtxSampleRate(+elem.value); break;
+			case 'control-buffer-size': this.setAudioCtxBufferSize(+elem.value); break;
+			case 'control-fft-extra': this.setExtraFftChannels(elem.checked); break;
+			case 'control-fft-mono': this.setMonoFft(elem.checked); break;
+			case 'control-fft-fill': this.setFftFill(elem.checked); break;
+			case 'control-fft-blend': this.setFftBlendMode(elem.value); break;
 			case 'control-font-family': this.setFontFamily(elem.value); break;
 			case 'control-font-size': this.setFontSize(+elem.value); break;
-			case 'control-color-diagram': this.setColorDiagram(elem.value); break;
-			case 'control-color-stereo':
-				this.setColorStereo(+elem.value);
-				ui.controlColorDiagramInfo.innerHTML = scope.getColorTest('colorDiagram');
-				ui.controlColorWaveformInfo.innerHTML = scope.getColorTest('colorWaveform');
-				break;
+			case 'control-color-diagram-left': this.setColorDiagramLeft(elem.value); break;
+			case 'control-color-diagram-mono': this.setColorDiagramMono(elem.value); break;
+			case 'control-color-diagram-center': this.setColorDiagramCenter(elem.value); break;
+			case 'control-color-diagram-right': this.setColorDiagramRight(elem.value); break;
 			case 'control-color-timecursor': this.setColorTimeCursor(elem.value); break;
-			case 'control-color-waveform': this.setColorWaveform(elem.value); break;
+			case 'control-color-waveform-left': this.setColorWaveformLeft(elem.value); break;
+			case 'control-color-waveform-mono': this.setColorWaveformMono(elem.value); break;
+			case 'control-color-waveform-center': this.setColorWaveformCenter(elem.value); break;
+			case 'control-color-waveform-right': this.setColorWaveformRight(elem.value); break;
 			case 'control-drawmode': this.setDrawMode(elem.value); break;
 			case 'control-mode': this.setPlaybackMode(elem.value); break;
 			case 'control-samplerate':
-			case 'control-samplerate-select': this.setSampleRate(+elem.value); break;
+				this.setSampleRate(+elem.value);
+				break;
+			case 'control-samplerate-select':
+				this.setSampleRate(elem.value === 'ctx' ? 'ctx' : +elem.value);
+				break;
 			case 'control-theme-style': this.setThemeStyle(elem.value); break;
 			case 'library-show-all':
 				library.toggleAll(elem, elem.checked);
@@ -100,9 +124,9 @@ globalThis.bytebeat = new class {
 			case 'control-play-forward': this.playbackToggle(true, true, 1); break;
 			case 'control-rec': this.toggleRecording(); break;
 			case 'control-reset': this.resetTime(); break;
-			case 'control-scale': this.setScale(-scope.drawScale); break;
-			case 'control-scaledown': this.setScale(-1, elem); break;
-			case 'control-scaleup': this.setScale(1); break;
+			case 'control-scale': this.setScale(scope.drawMode === 'FFT' ? 0 : -scope.drawScale); break;
+			case 'control-scaledown': this.setScale(scope.drawMode === 'FFT' ? 1 : -1, elem); break;
+			case 'control-scaleup': this.setScale(scope.drawMode === 'FFT' ? -1 : 1); break;
 			case 'control-srdivisor-down': this.setSRDivisor(-1); break;
 			case 'control-srdivisor-up': this.setSRDivisor(1); break;
 			case 'control-stop': this.playbackStop(); break;
@@ -115,6 +139,21 @@ globalThis.bytebeat = new class {
 				} else if(elem.classList.contains('code-load')) {
 					if (elem.dataset.file) {
 						this.loadTB3FromUrl(elem.dataset.file);
+					} else if(elem.dataset.codefile) {
+						const songData = elem.hasAttribute('data-songdata') ? JSON.parse(elem.dataset.songdata) : {};
+						const inputMode = elem.dataset.inputmode || songData.inputMode || songData.mode || 'Bytebeat';
+						editor.showLoading();
+						fetch(elem.dataset.codefile)
+							.then(response => response.text())
+							.then(code => {
+								this.loadCode(Object.assign({ code, inputMode }, songData));
+							})
+							.catch(err => {
+								console.error('Failed to load code file', err);
+							})
+							.finally(() => {
+								setTimeout(() => editor.hideLoading(), 100);
+							});
 					} else {
 						library.onclickCodeLoadButton(elem);
 					}
@@ -162,14 +201,38 @@ globalThis.bytebeat = new class {
 	async init() {
 		try {
 			this.settings = JSON.parse(localStorage.settings);
+			if(this.settings.drawMode === 'FFT_1024') {
+				this.settings.drawMode = 'FFT';
+				this.saveSettings();
+			}
+			if(this.settings.fftBinSize === undefined) {
+				this.settings.fftBinSize = this.defaultSettings.fftBinSize;
+				this.saveSettings();
+			}
+			if(this.settings.audioCtxBufferSize === undefined && this.settings.bufferSize !== undefined) {
+				this.settings.audioCtxBufferSize = this.settings.bufferSize;
+				delete this.settings.bufferSize;
+				this.saveSettings();
+			}
 			scope.drawMode = this.settings.drawMode;
 			scope.drawScale = this.settings.drawScale;
 			library.showAllSongs = this.settings.showAllSongs;
 		} catch(err) {
 			this.saveSettings();
 		}
+		if(this.settings.audioCtxSampleRate === undefined) {
+			this.settings.audioCtxSampleRate = this.defaultSettings.audioCtxSampleRate;
+			this.saveSettings();
+		}
+		if(this.settings.audioCtxBufferSize === undefined) {
+			this.settings.audioCtxBufferSize = this.defaultSettings.audioCtxBufferSize;
+			this.saveSettings();
+		}
 		this.setThemeStyle();
 		await this.initAudio();
+		if(ui.controlAudioCtxSampleRate) {
+			ui.controlAudioCtxSampleRate.value = this.settings.audioCtxSampleRate || this.audioCtx.sampleRate;
+		}
 		if(document.readyState === 'loading') {
 			document.addEventListener('DOMContentLoaded', () => this.initAfterDom());
 			return;
@@ -195,20 +258,46 @@ globalThis.bytebeat = new class {
 			this.setFontFamily();
 			this.setCustomFont();
 			this.setFontSize();
-			this.setColorStereo();
-			this.setColorDiagram();
-			this.setColorWaveform();
+			this.ensureColorSettings();
+			this.setColorWaveformLeft();
+			this.setColorWaveformMono();
+			this.setColorWaveformCenter();
+			this.setColorWaveformRight();
+			this.setColorDiagramLeft();
+			this.setColorDiagramMono();
+			this.setColorDiagramCenter();
+			this.setColorDiagramRight();
 			this.setColorTimeCursor();
-			this.setScale(0);
+			if(scope.drawMode === 'FFT') {
+				this.updateScaleDisplay();
+			} else {
+				this.setScale(0);
+			}
+			this.applyFftBinSize(this.settings.fftBinSize || this.defaultSettings.fftBinSize);
+			this.updateScaleDisplay();
 			this.setScopePreferencesCheckbox();
 			this.parseUrl();
-			this.sendData({ drawMode: scope.drawMode });
-			ui.controlDrawMode.value = scope.drawMode;
+		this.sendData({ drawMode: scope.drawMode });
+		ui.controlDrawMode.value = scope.drawMode;
 			ui.controlThemeStyle.value = this.settings.themeStyle;
 			ui.controlCodeStyle.value = this.settings.codeStyle;
+			if(ui.controlAudioCtxSampleRate) {
+				ui.controlAudioCtxSampleRate.value = this.settings.audioCtxSampleRate || 48000;
+			}
+			if(ui.controlBufferSize) {
+				ui.controlBufferSize.value = this.settings.audioCtxBufferSize || 0;
+			}
+			const ctxOption = ui.controlSampleRateSelect?.querySelector('option[value="ctx"]');
+			if(ctxOption && this.audioCtx) {
+				ctxOption.textContent = `AudioCtx (${ this.audioCtx.sampleRate }Hz)`;
+			}
 			if(ui.controlFontFamily) ui.controlFontFamily.value = this.settings.fontFamily;
 			if(ui.controlCustomFont) ui.controlCustomFont.value = this.settings.customFont;
 			if(ui.controlFontSize) ui.controlFontSize.value = this.settings.fontSize;
+			if(ui.controlFftExtra) ui.controlFftExtra.checked = !!this.settings.showExtraFftChannels;
+			if(ui.controlFftMono) ui.controlFftMono.checked = this.settings.showMonoFft !== false;
+			if(ui.controlFftFill) ui.controlFftFill.checked = !!this.settings.showFftFill;
+			if(ui.controlFftBlend) ui.controlFftBlend.value = this.settings.fftBlendMode || 'source-over';
 			ui.mainElem.addEventListener('click', this);
 			ui.mainElem.addEventListener('change', this);
 			ui.containerFixed.addEventListener('input', this);
@@ -223,8 +312,19 @@ globalThis.bytebeat = new class {
 			}
 		}, 50);
 	}
-	async initAudio() {
-		this.audioCtx = new AudioContext({ latencyHint: 'balanced', sampleRate: 48000 });
+	async initAudio(sampleRateOverride) {
+		const sampleRate = this.sanitizeAudioCtxSampleRate(sampleRateOverride ?? this.settings.audioCtxSampleRate);
+		const bufferSize = this.sanitizeAudioCtxBufferSize(this.settings.audioCtxBufferSize);
+		const latencyHint = bufferSize ? bufferSize / sampleRate : 'balanced';
+		this.audioCtx = new AudioContext({ latencyHint, sampleRate });
+		if(this.audioCtx.sampleRate && this.settings.audioCtxSampleRate !== this.audioCtx.sampleRate) {
+			this.settings.audioCtxSampleRate = this.audioCtx.sampleRate;
+			this.saveSettings();
+		}
+		scope.showExtraFftChannels = !!this.settings.showExtraFftChannels;
+		scope.showMonoFft = this.settings.showMonoFft !== false;
+		scope.showFftFill = !!this.settings.showFftFill;
+		scope.fftBlendMode = this.settings.fftBlendMode || 'source-over';
 		this.audioGain = new GainNode(this.audioCtx);
 		this.audioGain.connect(this.audioCtx.destination);
 		await this.audioCtx.audioWorklet.addModule('./build/audio-processor.mjs');
@@ -233,14 +333,47 @@ globalThis.bytebeat = new class {
 		this.audioWorkletNode.port.addEventListener('message', e => this.receiveData(e.data));
 		this.audioWorkletNode.port.start();
 		// Setup analyser for FFT
-		scope.analyser = this.audioCtx.createAnalyser();
-		scope.analyser.fftSize = 1024;
-		scope.analyser.smoothingTimeConstant = 0.7;
-		scope.analyserData = new Uint8Array(scope.analyser.frequencyBinCount);
-		this.analyserGain = new GainNode(this.audioCtx, { gain: 0.1 }); // scale down to 10%
-		this.audioWorkletNode.connect(this.analyserGain);
-		this.analyserGain.connect(scope.analyser);
-		this.audioWorkletNode.connect(this.audioGain);
+			scope.analyser = this.audioCtx.createAnalyser();
+			scope.analyser.smoothingTimeConstant = 0.7;
+			scope.analyserData = new Uint8Array(scope.analyser.frequencyBinCount);
+			this.analyserGain = new GainNode(this.audioCtx, { gain: 0.1 }); // scale down to 10%
+			this.audioWorkletNode.connect(this.analyserGain);
+			this.analyserGain.connect(scope.analyser);
+			this.audioWorkletNode.connect(this.audioGain);
+			if(scope.showExtraFftChannels) {
+				this.fftWorkletNode = new AudioWorkletNode(this.audioCtx, 'audioProcessor',
+					{ outputChannelCount: [3] });
+				this.fftWorkletNode.port.start();
+				const splitter = new ChannelSplitterNode(this.audioCtx, { numberOfOutputs: 3 });
+				this.fftWorkletNode.connect(splitter);
+				const fftGainLeft = new GainNode(this.audioCtx, { gain: 0.1 });
+				const fftGainCenter = new GainNode(this.audioCtx, { gain: 0.1 });
+				const fftGainRight = new GainNode(this.audioCtx, { gain: 0.1 });
+				scope.analyserLeft = this.audioCtx.createAnalyser();
+				scope.analyserCenter = this.audioCtx.createAnalyser();
+				scope.analyserRight = this.audioCtx.createAnalyser();
+				scope.analyserLeft.smoothingTimeConstant = 0.7;
+				scope.analyserCenter.smoothingTimeConstant = 0.7;
+				scope.analyserRight.smoothingTimeConstant = 0.7;
+				splitter.connect(fftGainLeft, 0);
+				splitter.connect(fftGainCenter, 1);
+				splitter.connect(fftGainRight, 2);
+				fftGainLeft.connect(scope.analyserLeft);
+				fftGainCenter.connect(scope.analyserCenter);
+				fftGainRight.connect(scope.analyserRight);
+				scope.analyserLeftData = new Uint8Array(scope.analyserLeft.frequencyBinCount);
+				scope.analyserCenterData = new Uint8Array(scope.analyserCenter.frequencyBinCount);
+				scope.analyserRightData = new Uint8Array(scope.analyserRight.frequencyBinCount);
+			} else {
+				this.fftWorkletNode = null;
+				scope.analyserLeft = null;
+				scope.analyserCenter = null;
+				scope.analyserRight = null;
+				scope.analyserLeftData = null;
+				scope.analyserCenterData = null;
+				scope.analyserRightData = null;
+			}
+			this.applyFftBinSize(this.settings.fftBinSize || this.defaultSettings.fftBinSize);
 		const mediaDest = this.audioCtx.createMediaStreamDestination();
 		const audioRecorder = this.audioRecorder = new MediaRecorder(mediaDest.stream);
 		audioRecorder.addEventListener('dataavailable', e => this.audioRecordChunks.push(e.data));
@@ -268,6 +401,7 @@ globalThis.bytebeat = new class {
 		const fileInput = document.getElementById('file-input');
 		const loadTB3Btn = document.getElementById('load-tb3');
 		const tb3Input = document.getElementById('tb3-input');
+		const offlineRenderBtn = document.getElementById('offline-render-wav');
 		
 		addFileBtn.addEventListener('click', () => fileInput.click());
 		clearFilesBtn.addEventListener('click', () => this.clearAllFiles());
@@ -275,6 +409,9 @@ globalThis.bytebeat = new class {
 		loadTB3Btn.addEventListener('click', () => tb3Input.click());
 		tb3Input.addEventListener('change', e => this.handleTB3Select(e));
 		document.getElementById('save-tb3').addEventListener('click', () => this.saveTB3());
+		if(offlineRenderBtn) {
+			offlineRenderBtn.addEventListener('click', () => this.renderOfflineWav());
+		}
 	}
 	async handleFileSelect(e) {
 		const files = Array.from(e.target.files);
@@ -476,34 +613,64 @@ globalThis.bytebeat = new class {
 						`;
 					} else {
 						// Regular JS file
-						const codeResponse = await fetch(`./data/songs/exotic/${ project.codeFile }`);
-						const code = await codeResponse.text();
 						const formatLabel = project.mode ? `[${ project.mode }] ` : '';
-						projectDiv.innerHTML = `
-							<div class="song-title">${ formatLabel }${
-								project.name
-							}</div>
-							<div class="song-author">${ section.name } (${
-								project.date
-							})</div>
-							${
-								project.description
-									? `<div class="song-description">${
-										project.description
-									}</div>`
-									: ''
-							}
-							${
-								project.features
-									? `<div class="song-features">Features: ${
-										project.features.join(', ')
-									}</div>`
-									: ''
-							}
-							<div class="code-text" data-songdata='${
-								JSON.stringify({ ...project, code })
-							}'>${ code }</div>
-						`;
+						if(project.long_code) {
+							projectDiv.innerHTML = `
+								<div class="song-title">${ formatLabel }${
+									project.name
+								}</div>
+								<div class="song-author">${ section.name } (${
+									project.date
+								})</div>
+								${
+									project.description
+										? `<div class="song-description">${
+											project.description
+										}</div>`
+										: ''
+								}
+								${
+									project.features
+										? `<div class="song-features">Features: ${
+											project.features.join(', ')
+										}</div>`
+										: ''
+								}
+								<button class="code-load" data-codefile="./data/songs/exotic/${
+									project.codeFile
+								}" data-songdata='${
+									JSON.stringify(project)
+								}'>Load ${ project.codeFile }</button>
+							`;
+						} else {
+							const codeResponse = await fetch(`./data/songs/exotic/${ project.codeFile }`);
+							const code = await codeResponse.text();
+							projectDiv.innerHTML = `
+								<div class="song-title">${ formatLabel }${
+									project.name
+								}</div>
+								<div class="song-author">${ section.name } (${
+									project.date
+								})</div>
+								${
+									project.description
+										? `<div class="song-description">${
+											project.description
+										}</div>`
+										: ''
+								}
+								${
+									project.features
+										? `<div class="song-features">Features: ${
+											project.features.join(', ')
+										}</div>`
+										: ''
+								}
+								<div class="code-text" data-songdata='${
+									JSON.stringify({ ...project, code })
+								}'>${ code }</div>
+							`;
+						}
 					}
 					projectsContainer.appendChild(projectDiv);
 				}
@@ -525,7 +692,8 @@ globalThis.bytebeat = new class {
 			mode: this.mode,
 			sampleRate: this.sampleRate,
 			drawMode: scope.drawMode,
-			scale: scope.drawScale
+			scale: scope.drawScale,
+			fftBinSize: this.settings.fftBinSize
 		}));
 		
 		// Save audio files in audio folder
@@ -545,6 +713,271 @@ globalThis.bytebeat = new class {
 		ui.downloader.click();
 		setTimeout(() => URL.revokeObjectURL(url));
 	}
+	getOfflineExportElements() {
+		return {
+			start: document.getElementById('offline-render-start'),
+			duration: document.getElementById('offline-render-duration'),
+			units: document.getElementById('offline-render-units'),
+			button: document.getElementById('offline-render-wav'),
+			status: document.getElementById('offline-render-status')
+		};
+	}
+	setOfflineStatus(message, isError = false) {
+		const { status } = this.getOfflineExportElements();
+		if(!status) {
+			return;
+		}
+		status.textContent = message;
+		status.style.color = isError ? '#ffb2b2' : '#b8c4d8';
+	}
+	createBytebeatFunction(codeText, mode) {
+		const params = Object.getOwnPropertyNames(Math);
+		const values = params.map(k => Math[k]);
+		const funcs = {
+			/*bit*/        "bitC": function (x, y, z) { return x & y ? z : 0 },
+			/*bit reverse*/"br": function (x, size = 8) {
+				if (size > 32) { throw new Error("br() Size cannot be greater than 32"); }
+				let result = 0;
+				for (let idx = 0; idx < size; idx++) {
+					result += funcs.bitC(x, 2 ** idx, 2 ** (size - (idx + 1)));
+				}
+				return result;
+			},
+			/*sin that loops every 128 "steps", instead of every pi steps*/"sinf": function (x) { return Math.sin(x / (128 / Math.PI)); },
+			/*cos that loops every 128 "steps", instead of every pi steps*/"cosf": function (x) { return Math.cos(x / (128 / Math.PI)); },
+			/*tan that loops every 128 "steps", instead of every pi steps*/"tanf": function (x) { return Math.tan(x / (128 / Math.PI)); },
+			/*converts t into a string composed of it's bits, regex's that*/"regG": function (t, X) { return X.test(t.toString(2)); },
+			"saw": t => t % 256,
+			"tri": t => Math.abs((t % 512) - 256),
+			"sq": t => t % 256 < 128 ? 255 : 0,
+			"audioIN": (index, channel = 0, file = 0) => {
+				const audioFile = this.audioFiles.get(file);
+				if (!audioFile || !audioFile.data) return 0;
+				const sampleIndex = Math.floor(index) * audioFile.channels + (channel % audioFile.channels);
+				return audioFile.data[sampleIndex] || 0;
+			},
+			"audioLength": (file = 0) => {
+				const audioFile = this.audioFiles.get(file);
+				return audioFile ? audioFile.data.length / audioFile.channels : 0;
+			}
+		};
+
+		params.push('int', 'window', ...Object.keys(funcs));
+		values.push(Math.floor, globalThis, ...Object.values(funcs));
+
+		if(mode === 'Funcbeat') {
+			const factory = new Function(...params, codeText).bind(globalThis, ...values);
+			const fn = factory();
+			if(typeof fn !== 'function') {
+				throw new Error('Funcbeat must return a function.');
+			}
+			fn(0, this.sampleRate);
+			return { fn, isFuncbeat: true };
+		}
+
+		let compiledCode = (codeText || '').trim().replace(
+			/^eval\(unescape\(escape(?:`|\('|\("|\(`)(.*?)(?:`|'\)|"\)|`\)).replace\(\/u\(\.\.\)\/g,["'`]\$1%["'`]\)\)\)$/,
+			(match, m1) => unescape(escape(m1).replace(/u(..)/g, '$1%'))
+		);
+		const fn = new Function(...params, 't', `return 0,\n${ compiledCode || 0 };`)
+			.bind(globalThis, ...values);
+		fn(0);
+		return { fn, isFuncbeat: false };
+	}
+	getOutputValue(value, mode) {
+		switch(mode) {
+		case 'Bytebeat':
+			return (value & 255) / 127.5 - 1;
+		case 'Signed Bytebeat':
+			return ((value + 128) & 255) / 127.5 - 1;
+		case 'Bitbeat':
+			return (value & 1) - 0.5;
+		case '2048':
+			return (value & 2047) / 1020 - 1;
+		case 'logmode':
+			return ((Math.log2(value) * 32) & 255) / 127.5 - 1;
+		case 'logHack': {
+			const neg = (value < 0) ? -32 : 32;
+			return ((Math.log2(Math.abs(value)) * neg) & 255) / 127.5 - 1;
+		}
+		case 'logHack2': {
+			const neg = value < 0;
+			return value === 0 ? 0 :
+				((((Math.log2(Math.abs(value)) * (neg ? -16 : 16)) + (neg ? -127 : 128)) & 255) / 127.5 - 1);
+		}
+		case 'Floatbeat':
+		case 'Funcbeat':
+		default: {
+			const outValue = Math.max(Math.min(value, 1), -1);
+			return outValue;
+		}
+		}
+	}
+	encodeWav(buffer) {
+		const numChannels = buffer.numberOfChannels;
+		const sampleRate = buffer.sampleRate;
+		const numFrames = buffer.length;
+		const bytesPerSample = 2;
+		const blockAlign = numChannels * bytesPerSample;
+		const byteRate = sampleRate * blockAlign;
+		const dataSize = numFrames * blockAlign;
+		const bufferSize = 44 + dataSize;
+		const arrayBuffer = new ArrayBuffer(bufferSize);
+		const view = new DataView(arrayBuffer);
+		const writeString = (offset, str) => {
+			for(let i = 0; i < str.length; i++) {
+				view.setUint8(offset + i, str.charCodeAt(i));
+			}
+		};
+		writeString(0, 'RIFF');
+		view.setUint32(4, 36 + dataSize, true);
+		writeString(8, 'WAVE');
+		writeString(12, 'fmt ');
+		view.setUint32(16, 16, true);
+		view.setUint16(20, 1, true);
+		view.setUint16(22, numChannels, true);
+		view.setUint32(24, sampleRate, true);
+		view.setUint32(28, byteRate, true);
+		view.setUint16(32, blockAlign, true);
+		view.setUint16(34, 16, true);
+		writeString(36, 'data');
+		view.setUint32(40, dataSize, true);
+		let offset = 44;
+		const channelData = [];
+		for(let ch = 0; ch < numChannels; ch++) {
+			channelData.push(buffer.getChannelData(ch));
+		}
+		for(let i = 0; i < numFrames; i++) {
+			for(let ch = 0; ch < numChannels; ch++) {
+				let sample = channelData[ch][i];
+				sample = Math.max(-1, Math.min(1, sample));
+				view.setInt16(offset, Math.round(sample * 32767), true);
+				offset += 2;
+			}
+		}
+		return new Blob([arrayBuffer], { type: 'audio/wav' });
+	}
+	async renderOfflineWav() {
+		const { start, duration, units, button } = this.getOfflineExportElements();
+		if(!start || !duration || !units || !button) {
+			return;
+		}
+		const startValue = parseFloat(start.value);
+		const durationValue = parseFloat(duration.value);
+		if(!isFinite(startValue) || startValue < 0) {
+			this.setOfflineStatus('Start must be 0 or greater.', true);
+			return;
+		}
+		if(!isFinite(durationValue) || durationValue <= 0) {
+			this.setOfflineStatus('Duration must be greater than 0.', true);
+			return;
+		}
+		if(this.isOfflineRendering) {
+			return;
+		}
+		this.isOfflineRendering = true;
+		button.setAttribute('disabled', true);
+		this.setOfflineStatus('Rendering...');
+		try {
+			const sampleRate = this.sampleRate;
+			const useFrames = units.value === 'frames';
+			const startSample = useFrames ?
+				Math.max(0, Math.floor(startValue)) :
+				Math.max(0, Math.round(startValue * sampleRate));
+			const renderSamples = useFrames ?
+				Math.max(1, Math.floor(durationValue)) :
+				Math.max(1, Math.round(durationValue * sampleRate));
+			const offlineCtx = new OfflineAudioContext(2, renderSamples, sampleRate);
+			const buffer = offlineCtx.createBuffer(2, renderSamples, sampleRate);
+			const leftData = buffer.getChannelData(0);
+			const rightData = buffer.getChannelData(1);
+			const { fn, isFuncbeat } = this.createBytebeatFunction(editor.value, this.mode);
+			const srDivisor = Math.max(1, this.settings.srDivisor || 1);
+			let lastSample = NaN;
+			let divisorStorage = 0;
+			let outChannels = [0, 0, 0];
+			let outLeft = 0;
+			let outRight = 0;
+			for(let i = 0; i < renderSamples; i++) {
+				const t = startSample + i;
+				const currentSample = Math.floor(t);
+				const divisorMet = (((t % srDivisor) + srDivisor) % srDivisor) === 0;
+				if(currentSample !== lastSample) {
+					lastSample = currentSample;
+					let funcValue;
+					try {
+						if(isFuncbeat) {
+							funcValue = fn(currentSample / sampleRate, sampleRate);
+						} else {
+							funcValue = fn(currentSample);
+						}
+						if(!divisorMet) {
+							funcValue = divisorStorage;
+						} else {
+							divisorStorage = funcValue;
+						}
+					} catch(err) {
+						funcValue = NaN;
+					}
+					let values;
+					let hasCenter = false;
+					if(Array.isArray(funcValue)) {
+						if(funcValue.length >= 3) {
+							values = [funcValue[0], funcValue[1], funcValue[2]];
+							hasCenter = true;
+						} else if(funcValue.length === 2) {
+							values = [funcValue[0], NaN, funcValue[1]];
+						} else if(funcValue.length === 1) {
+							values = [funcValue[0], NaN, funcValue[0]];
+						} else {
+							values = [NaN, NaN, NaN];
+						}
+					} else {
+						values = [funcValue, NaN, funcValue];
+					}
+					const channelIndices = hasCenter ? [0, 1, 2] : [0, 2];
+					for(const ch of channelIndices) {
+						let value = values[ch];
+						try {
+							value = +value;
+						} catch {
+							value = NaN;
+						}
+						if(!isNaN(value)) {
+							outChannels[ch] = this.getOutputValue(value, this.mode);
+						}
+					}
+					if(hasCenter) {
+						outLeft = outChannels[0] * (2 / 3) + outChannels[1] / 3;
+						outRight = outChannels[2] * (2 / 3) + outChannels[1] / 3;
+					} else {
+						outLeft = outChannels[0];
+						outRight = outChannels[2];
+					}
+				}
+				leftData[i] = outLeft;
+				rightData[i] = outRight;
+			}
+			const source = offlineCtx.createBufferSource();
+			source.buffer = buffer;
+			source.connect(offlineCtx.destination);
+			source.start();
+			const rendered = await offlineCtx.startRendering();
+			const wavBlob = this.encodeWav(rendered);
+			const filename = `bytebeat_${ useFrames ? `${ startSample }f_${ renderSamples }f` : `${ (startSample / sampleRate).toFixed(2) }s_${ (renderSamples / sampleRate).toFixed(2) }s` }.wav`;
+			const url = URL.createObjectURL(wavBlob);
+			ui.downloader.href = url;
+			ui.downloader.download = filename;
+			ui.downloader.click();
+			setTimeout(() => URL.revokeObjectURL(url));
+			this.setOfflineStatus('WAV export complete.');
+		} catch(err) {
+			this.setOfflineStatus(`Render failed: ${ err.message || err }`, true);
+		} finally {
+			button.removeAttribute('disabled');
+			this.isOfflineRendering = false;
+		}
+	}
 	toggleExoticSection(header) {
 		const arrow = header.querySelector('.library-arrow');
 		const songsContainer = header.nextElementSibling;
@@ -553,7 +986,10 @@ globalThis.bytebeat = new class {
 		songsContainer.style.display = isExpanded ? 'none' : 'block';
 	}
 	loadCode(params = {}, isPlay = true) {
-		const { code, sampleRate, inputMode, mode: paramMode, drawMode, scale, srDivisor: paramSrDivisor } = params;
+		let { code, sampleRate, inputMode, mode: paramMode, drawMode, scale, fftBinSize, srDivisor: paramSrDivisor } = params;
+		if(drawMode === 'FFT_1024') {
+			drawMode = 'FFT';
+		}
 		let mode = inputMode || paramMode || this.mode || 'Bytebeat';
 		if (mode === '') mode = 'Bytebeat';
 		const savedSrDivisor = paramSrDivisor !== undefined ? paramSrDivisor : (this.settings.srDivisor || 1);
@@ -592,6 +1028,9 @@ globalThis.bytebeat = new class {
 			}
 			if(scale !== undefined && !doNotChangeScopePrefs) {
 				this.setScale(scale - scope.drawScale);
+			}
+			if(fftBinSize !== undefined && !doNotChangeScopePrefs) {
+				this.setFftBinSize(fftBinSize);
 			}
 			this.sendData(data);
 			
@@ -729,6 +1168,12 @@ globalThis.bytebeat = new class {
 	}
 	sendData(data) {
 		this.audioWorkletNode.port.postMessage(data);
+		if(this.fftWorkletNode) {
+			this.fftWorkletNode.port.postMessage({
+				...data,
+				fftRawOutput: true
+			});
+		}
 	}
 	setByteSample(value) {
 		this.byteSample = +value || 0;
@@ -754,33 +1199,215 @@ globalThis.bytebeat = new class {
 		editor.container.dataset.theme = this.settings.codeStyle = value;
 		this.saveSettings();
 	}
-	setColorStereo(value) {
-		// value: Red=0, Green=1, Blue=2
-		if(value !== undefined) {
-			this.settings.colorStereo = value;
-			this.saveSettings();
-		} else if((value = this.settings.colorStereo) === undefined) {
-			value = this.settings.colorStereo = this.defaultSettings.colorStereo;
-			this.saveSettings();
+	sanitizeAudioCtxSampleRate(value) {
+		if(!value || !isFinite(value)) {
+			return undefined;
 		}
-		ui.controlColorStereo.value = value;
-		switch(value) {
-		// [Left, Right1, Right2]
-		case 0: scope.colorChannels = [0, 1, 2]; break;
-		case 2: scope.colorChannels = [2, 0, 1]; break;
-		default: scope.colorChannels = [1, 0, 2];
+		const rounded = Math.round(Math.abs(value));
+		if(rounded < 8000) {
+			return 8000;
+		}
+		return rounded;
+	}
+	async setAudioCtxSampleRate(value) {
+		const desired = this.sanitizeAudioCtxSampleRate(value);
+		const stored = this.sanitizeAudioCtxSampleRate(this.settings.audioCtxSampleRate);
+		if(desired === stored) {
+			return;
+		}
+		this.settings.audioCtxSampleRate = desired || 48000;
+		this.saveSettings();
+		if(!this.audioCtx) {
+			return;
+		}
+		await this.reinitAudioContext();
+	}
+	async setExtraFftChannels(isEnabled) {
+		const next = !!isEnabled;
+		if(next === !!this.settings.showExtraFftChannels) {
+			return;
+		}
+		if(this.settings.fftBinSize === undefined) {
+			this.settings.fftBinSize = scope.fftBinSize || this.defaultSettings.fftBinSize;
+		}
+		this.settings.showExtraFftChannels = next;
+		this.saveSettings();
+		await this.reinitAudioContext();
+	}
+	setMonoFft(isEnabled) {
+		this.settings.showMonoFft = !!isEnabled;
+		scope.showMonoFft = this.settings.showMonoFft;
+		this.saveSettings();
+	}
+	setFftFill(isEnabled) {
+		this.settings.showFftFill = !!isEnabled;
+		scope.showFftFill = this.settings.showFftFill;
+		this.saveSettings();
+	}
+	setFftBlendMode(mode) {
+		this.settings.fftBlendMode = mode || 'source-over';
+		scope.fftBlendMode = this.settings.fftBlendMode;
+		this.saveSettings();
+	}
+	async reinitAudioContext() {
+		const wasPlaying = this.isPlaying;
+		this.playbackToggle(false, false);
+		if(this.audioWorkletNode) {
+			try { this.audioWorkletNode.disconnect(); } catch { /* noop */ }
+		}
+		if(this.fftWorkletNode) {
+			try { this.fftWorkletNode.disconnect(); } catch { /* noop */ }
+		}
+		if(this.audioGain) {
+			try { this.audioGain.disconnect(); } catch { /* noop */ }
+		}
+		if(this.analyserGain) {
+			try { this.analyserGain.disconnect(); } catch { /* noop */ }
+		}
+		if(this.audioCtx) {
+			try { await this.audioCtx.close(); } catch { /* noop */ }
+		}
+		await this.initAudio();
+		const data = {
+			mode: this.mode,
+			sampleRate: this.sampleRate,
+			sampleRatio: this.sampleRate / this.audioCtx.sampleRate,
+			srDivisor: this.settings.srDivisor || 1,
+			drawMode: scope.drawMode,
+			setFunction: editor.value,
+			isPlaying: false,
+			playbackSpeed: this.playbackSpeed
+		};
+		this.sendData(data);
+		if(wasPlaying) {
+			this.playbackToggle(true);
 		}
 	}
-	setColorDiagram(value) {
+	parseHexColor(value) {
+		if(typeof value !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(value)) {
+			return [255, 255, 255];
+		}
+		return [
+			parseInt(value.slice(1, 3), 16),
+			parseInt(value.slice(3, 5), 16),
+			parseInt(value.slice(5, 7), 16)
+		];
+	}
+	toHexColor(rgb) {
+		const toHex = value => value.toString(16).padStart(2, '0');
+		return `#${ toHex(rgb[0]) }${ toHex(rgb[1]) }${ toHex(rgb[2]) }`;
+	}
+	mapStereoColors(baseHex, stereo) {
+		const [r, g, b] = this.parseHexColor(baseHex);
+		let left;
+		let right;
+		switch(stereo) {
+		case 0:
+			left = [r, 0, 0];
+			right = [0, g, b];
+			break;
+		case 2:
+			left = [0, 0, b];
+			right = [r, g, 0];
+			break;
+		default:
+			left = [0, g, 0];
+			right = [r, 0, b];
+		}
+		return {
+			left: this.toHexColor(left),
+			center: this.toHexColor([r, g, b]),
+			right: this.toHexColor(right)
+		};
+	}
+	ensureColorSettings() {
+		const hasWaveform = this.settings.colorWaveformLeft !== undefined ||
+			this.settings.colorWaveformCenter !== undefined ||
+			this.settings.colorWaveformMono !== undefined ||
+			this.settings.colorWaveformRight !== undefined;
+		const hasDiagram = this.settings.colorDiagramLeft !== undefined ||
+			this.settings.colorDiagramCenter !== undefined ||
+			this.settings.colorDiagramMono !== undefined ||
+			this.settings.colorDiagramRight !== undefined;
+		if(!hasWaveform || !hasDiagram) {
+			const baseWaveform = this.settings.colorWaveform || this.defaultSettings.colorWaveformCenter || '#ffffff';
+			const baseDiagram = this.settings.colorDiagram || this.defaultSettings.colorDiagramCenter || '#0080ff';
+			const stereo = this.settings.colorStereo ?? 1;
+			const waveformColors = this.mapStereoColors(baseWaveform, stereo);
+			const diagramColors = this.mapStereoColors(baseDiagram, stereo);
+			if(this.settings.colorWaveformLeft === undefined) {
+				this.settings.colorWaveformLeft = waveformColors.left;
+			}
+			if(this.settings.colorWaveformCenter === undefined) {
+				this.settings.colorWaveformCenter = waveformColors.center;
+			}
+			if(this.settings.colorWaveformMono === undefined) {
+				this.settings.colorWaveformMono = waveformColors.center;
+			}
+			if(this.settings.colorWaveformRight === undefined) {
+				this.settings.colorWaveformRight = waveformColors.right;
+			}
+			if(this.settings.colorDiagramLeft === undefined) {
+				this.settings.colorDiagramLeft = diagramColors.left;
+			}
+			if(this.settings.colorDiagramCenter === undefined) {
+				this.settings.colorDiagramCenter = diagramColors.center;
+			}
+			if(this.settings.colorDiagramMono === undefined) {
+				this.settings.colorDiagramMono = diagramColors.center;
+			}
+			if(this.settings.colorDiagramRight === undefined) {
+				this.settings.colorDiagramRight = diagramColors.right;
+			}
+		}
+		delete this.settings.colorStereo;
+		delete this.settings.colorDiagram;
+		delete this.settings.colorWaveform;
+		this.saveSettings();
+	}
+	setColorDiagramLeft(value) {
 		if(value !== undefined) {
-			this.settings.colorDiagram = value;
+			this.settings.colorDiagramLeft = value;
 			this.saveSettings();
-		} else if((value = this.settings.colorDiagram) === undefined) {
-			value = this.settings.colorDiagram = this.defaultSettings.colorDiagram;
+		} else if((value = this.settings.colorDiagramLeft) === undefined) {
+			value = this.settings.colorDiagramLeft = this.defaultSettings.colorDiagramLeft;
 			this.saveSettings();
 		}
-		ui.controlColorDiagram.value = value;
-		ui.controlColorDiagramInfo.innerHTML = scope.getColorTest('colorDiagram', value);
+		ui.controlColorDiagramLeft.value = value;
+		scope.colorDiagramLeft = this.parseHexColor(value);
+	}
+	setColorDiagramCenter(value) {
+		if(value !== undefined) {
+			this.settings.colorDiagramCenter = value;
+			this.saveSettings();
+		} else if((value = this.settings.colorDiagramCenter) === undefined) {
+			value = this.settings.colorDiagramCenter = this.defaultSettings.colorDiagramCenter;
+			this.saveSettings();
+		}
+		ui.controlColorDiagramCenter.value = value;
+		scope.colorDiagramCenter = this.parseHexColor(value);
+	}
+	setColorDiagramMono(value) {
+		if(value !== undefined) {
+			this.settings.colorDiagramMono = value;
+			this.saveSettings();
+		} else if((value = this.settings.colorDiagramMono) === undefined) {
+			value = this.settings.colorDiagramMono = this.defaultSettings.colorDiagramMono;
+			this.saveSettings();
+		}
+		ui.controlColorDiagramMono.value = value;
+		scope.colorDiagramMono = this.parseHexColor(value);
+	}
+	setColorDiagramRight(value) {
+		if(value !== undefined) {
+			this.settings.colorDiagramRight = value;
+			this.saveSettings();
+		} else if((value = this.settings.colorDiagramRight) === undefined) {
+			value = this.settings.colorDiagramRight = this.defaultSettings.colorDiagramRight;
+			this.saveSettings();
+		}
+		ui.controlColorDiagramRight.value = value;
+		scope.colorDiagramRight = this.parseHexColor(value);
 	}
 	setColorTimeCursor(value) {
 		if(value !== undefined) {
@@ -793,16 +1420,49 @@ globalThis.bytebeat = new class {
 		ui.controlColorTimeCursor.value = value;
 		scope.canvasTimeCursor.style.borderLeft = '2px solid ' + value;
 	}
-	setColorWaveform(value) {
+	setColorWaveformLeft(value) {
 		if(value !== undefined) {
-			this.settings.colorWaveform = value;
+			this.settings.colorWaveformLeft = value;
 			this.saveSettings();
-		} else if((value = this.settings.colorWaveform) === undefined) {
-			value = this.settings.colorWaveform = this.defaultSettings.colorWaveform;
+		} else if((value = this.settings.colorWaveformLeft) === undefined) {
+			value = this.settings.colorWaveformLeft = this.defaultSettings.colorWaveformLeft;
 			this.saveSettings();
 		}
-		ui.controlColorWaveform.value = value;
-		ui.controlColorWaveformInfo.innerHTML = scope.getColorTest('colorWaveform', value);
+		ui.controlColorWaveformLeft.value = value;
+		scope.colorWaveformLeft = this.parseHexColor(value);
+	}
+	setColorWaveformCenter(value) {
+		if(value !== undefined) {
+			this.settings.colorWaveformCenter = value;
+			this.saveSettings();
+		} else if((value = this.settings.colorWaveformCenter) === undefined) {
+			value = this.settings.colorWaveformCenter = this.defaultSettings.colorWaveformCenter;
+			this.saveSettings();
+		}
+		ui.controlColorWaveformCenter.value = value;
+		scope.colorWaveformCenter = this.parseHexColor(value);
+	}
+	setColorWaveformMono(value) {
+		if(value !== undefined) {
+			this.settings.colorWaveformMono = value;
+			this.saveSettings();
+		} else if((value = this.settings.colorWaveformMono) === undefined) {
+			value = this.settings.colorWaveformMono = this.defaultSettings.colorWaveformMono;
+			this.saveSettings();
+		}
+		ui.controlColorWaveformMono.value = value;
+		scope.colorWaveformMono = this.parseHexColor(value);
+	}
+	setColorWaveformRight(value) {
+		if(value !== undefined) {
+			this.settings.colorWaveformRight = value;
+			this.saveSettings();
+		} else if((value = this.settings.colorWaveformRight) === undefined) {
+			value = this.settings.colorWaveformRight = this.defaultSettings.colorWaveformRight;
+			this.saveSettings();
+		}
+		ui.controlColorWaveformRight.value = value;
+		scope.colorWaveformRight = this.parseHexColor(value);
 	}
 	setCounterUnits() {
 		ui.controlTimeUnits.textContent = this.settings.isSeconds ? 'sec' : 't';
@@ -815,6 +1475,7 @@ globalThis.bytebeat = new class {
 		scope.drawMode = drawMode;
 		this.saveSettings();
 		this.sendData({ drawMode });
+		this.updateScaleDisplay();
 	}
 	setPlaybackMode(mode) {
 		this.mode = mode;
@@ -822,22 +1483,30 @@ globalThis.bytebeat = new class {
 		this.sendData({ mode });
 	}
 	setSampleRate(sampleRate, isSendData = true) {
+		const useCtx = sampleRate === 'ctx';
+		if(useCtx) {
+			sampleRate = this.audioCtx?.sampleRate || 8000;
+		}
 		if(!sampleRate || !isFinite(sampleRate) ||
 			// Float32 limit
 			(sampleRate = Number(parseFloat(Math.abs(sampleRate)).toFixed(3))) > 3.4028234663852886E+38
 		) {
 			sampleRate = 8000;
 		}
-		switch(sampleRate) {
-		case 1000:
-		case 8000:
-		case 11025:
-		case 16000:
-		case 22050:
-		case 32000:
-		case 44100:
-		case 48000: ui.controlSampleRateSelect.value = sampleRate; break;
-		default: ui.controlSampleRateSelect.selectedIndex = -1;
+		if(useCtx) {
+			ui.controlSampleRateSelect.value = 'ctx';
+		} else {
+			switch(sampleRate) {
+			case 1000:
+			case 8000:
+			case 11025:
+			case 16000:
+			case 22050:
+			case 32000:
+			case 44100:
+			case 48000: ui.controlSampleRateSelect.value = sampleRate; break;
+			default: ui.controlSampleRateSelect.selectedIndex = -1;
+			}
 		}
 		ui.controlSampleRate.value = this.sampleRate = sampleRate;
 		ui.controlSampleRate.blur();
@@ -851,23 +1520,131 @@ globalThis.bytebeat = new class {
 			});
 		}
 	}
+	setAudioCtxBufferSize(value) {
+		const desired = this.sanitizeAudioCtxBufferSize(value);
+		const stored = this.sanitizeAudioCtxBufferSize(this.settings.audioCtxBufferSize);
+		if(desired === stored) {
+			return;
+		}
+		this.settings.audioCtxBufferSize = desired || 0;
+		this.saveSettings();
+		if(!this.audioCtx) {
+			return;
+		}
+		this.reinitAudioContext();
+	}
+	sanitizeAudioCtxBufferSize(value) {
+		if(!value || !isFinite(value)) {
+			return 0;
+		}
+		const rounded = Math.round(Math.abs(value));
+		if(rounded < 128) {
+			return 128;
+		}
+		return rounded;
+	}
 	setScale(amount, buttonElem) {
 		if(buttonElem?.getAttribute('disabled')) {
 			return;
 		}
-		const scale = Math.max(scope.drawScale + amount, 0);
-		scope.drawScale = scale;
-		ui.controlScale.innerHTML = !scale ? '1x' :
-			scale < 7 ? `1/${ 2 ** scale }${ scale < 4 ? 'x' : '' }` :
-			`<sub>2</sub>-${ scale }`;
-		this.saveSettings();
-		scope.clearCanvas();
-		scope.toggleTimeCursor();
-		if(scope.drawScale <= 0) {
-			ui.controlScaleDown.setAttribute('disabled', true);
+		if(scope.drawMode === 'FFT') {
+			if(amount === 0) {
+				this.setFftBinSize(this.defaultSettings.fftBinSize || 1024);
+				this.updateScaleDisplay();
+				return;
+			}
+			const next = this.clampFftBinSize((scope.fftBinSize || 1024) * (amount > 0 ? 2 : 0.5));
+			this.setFftBinSize(next);
 		} else {
-			ui.controlScaleDown.removeAttribute('disabled');
+			const scale = Math.max(scope.drawScale + amount, 0);
+			scope.drawScale = scale;
+			this.saveSettings();
+			scope.clearCanvas();
+			scope.toggleTimeCursor();
+			if(scope.drawScale <= 0) {
+				ui.controlScaleDown.setAttribute('disabled', true);
+			} else {
+				ui.controlScaleDown.removeAttribute('disabled');
+			}
 		}
+		this.updateScaleDisplay();
+	}
+	updateScaleDisplay() {
+		if(scope.drawMode === 'FFT') {
+			const size = scope.fftBinSize || 1024;
+			if(ui.controlScaleDown) {
+				ui.controlScaleDown.title = 'Add bins';
+			}
+			if(ui.controlScaleUp) {
+				ui.controlScaleUp.title = 'Remove bins';
+			}
+			ui.controlScale.innerHTML = size <= 512 ? `${ size }` : `<sub>2</sub>${ Math.round(Math.log2(size)) }`;
+			if(size >= 2 ** 15) {
+				ui.controlScaleDown.setAttribute('disabled', true);
+			} else {
+				ui.controlScaleDown.removeAttribute('disabled');
+			}
+			if(ui.controlScaleUp) {
+				if(size <= 64) {
+					ui.controlScaleUp.setAttribute('disabled', true);
+				} else {
+					ui.controlScaleUp.removeAttribute('disabled');
+				}
+			}
+		} else {
+			const scale = scope.drawScale;
+			if(ui.controlScaleDown) {
+				ui.controlScaleDown.title = 'Zoom in the scope';
+			}
+			if(ui.controlScaleUp) {
+				ui.controlScaleUp.title = 'Zoom out the scope';
+			}
+			ui.controlScale.innerHTML = !scale ? '1x' :
+				scale < 7 ? `1/${ 2 ** scale }${ scale < 4 ? 'x' : '' }` :
+				`<sub>2</sub>-${ scale }`;
+			if(scale <= 0) {
+				ui.controlScaleDown.setAttribute('disabled', true);
+			} else {
+				ui.controlScaleDown.removeAttribute('disabled');
+			}
+			if(ui.controlScaleUp) {
+				ui.controlScaleUp.removeAttribute('disabled');
+			}
+		}
+	}
+	clampFftBinSize(value) {
+		const min = 64;
+		const max = 2 ** 15;
+		let size = Math.round(value);
+		size = Math.max(min, Math.min(max, size));
+		const power = Math.round(Math.log2(size));
+		return 2 ** power;
+	}
+	applyFftBinSize(size) {
+		const clamped = this.clampFftBinSize(size);
+		scope.fftBinSize = clamped;
+		if(scope.analyser) {
+			scope.analyser.fftSize = clamped;
+			scope.analyserData = new Uint8Array(scope.analyser.frequencyBinCount);
+		}
+		if(scope.analyserLeft) {
+			scope.analyserLeft.fftSize = clamped;
+			scope.analyserLeftData = new Uint8Array(scope.analyserLeft.frequencyBinCount);
+		}
+		if(scope.analyserCenter) {
+			scope.analyserCenter.fftSize = clamped;
+			scope.analyserCenterData = new Uint8Array(scope.analyserCenter.frequencyBinCount);
+		}
+		if(scope.analyserRight) {
+			scope.analyserRight.fftSize = clamped;
+			scope.analyserRightData = new Uint8Array(scope.analyserRight.frequencyBinCount);
+		}
+	}
+	setFftBinSize(size) {
+		this.applyFftBinSize(size);
+		this.settings.fftBinSize = scope.fftBinSize;
+		this.saveSettings();
+		this.updateScaleDisplay();
 	}
 	setSRDivisor(increment) {
 		const oldValue = this.settings.srDivisor || 1;
@@ -923,9 +1700,10 @@ globalThis.bytebeat = new class {
 			colorDiagram = '#00a0ff';
 		}
 		this.setColorTimeCursor(colorCursor);
-		this.setColorStereo(colorStereo);
-		ui.controlColorWaveformInfo.innerHTML = scope.getColorTest('colorWaveform');
-		this.setColorDiagram(ui.controlColorDiagram.value = colorDiagram); // Contains this.saveSettings();
+		const diagramColors = this.mapStereoColors(colorDiagram, colorStereo);
+		this.setColorDiagramLeft(diagramColors.left);
+		this.setColorDiagramCenter(diagramColors.center);
+		this.setColorDiagramRight(diagramColors.right);
 	}
 	setVolume(isInit) {
 		let volumeValue = NaN;

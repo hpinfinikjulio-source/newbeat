@@ -37,8 +37,9 @@ export class Library {
 		author, code, codeFormLen, codeLen, codeMin, codeMinLen, coverName, coverUrl, date, description,
 		drawing, fileForm, fileMin, fileOrig, hash, mode, name, rating, remix, sampleRate, songs, stereo,
 		tags, url
-	}, libName) {
+	}, libName, defaultMode) {
 		const notAllLib = libName !== 'all';
+		const effectiveMode = mode || defaultMode;
 		if(songs) {
 			let songsStr = '';
 			const len = songs.length;
@@ -51,11 +52,11 @@ export class Library {
 					if(i === needToHide) {
 						songsStr += '</details>';
 					}
-					songsStr += this.generateEntryHTML(songs[i], libName);
+					songsStr += this.generateEntryHTML(songs[i], libName, effectiveMode);
 				}
 			} else {
 				for(let i = 0; i < len; ++i) {
-					songsStr += this.generateEntryHTML(songs[i], libName);
+					songsStr += this.generateEntryHTML(songs[i], libName, effectiveMode);
 				}
 			}
 			return `<details class="songs-block"${
@@ -74,7 +75,7 @@ export class Library {
 			str += ` <span>by ${ name || !noArrayUrl ? `<b>${ author }</b>` :
 				`<a href="${ url }" target="_blank">${ author }</a>` }</span>`;
 		}
-		const songObj = { sampleRate, mode, inputMode: mode || 'Bytebeat' };
+		const songObj = { sampleRate, mode: effectiveMode, inputMode: effectiveMode || 'Bytebeat' };
 		if(url && (!noArrayUrl || !name && !author)) {
 			if(noArrayUrl) {
 				str += `[<a href="${ url }" target="_blank">link</a>]`;
@@ -90,8 +91,8 @@ export class Library {
 		if(date) {
 			str += date;
 		}
-		if(mode) {
-			str += ' ' + mode;
+		if(effectiveMode) {
+			str += ' ' + effectiveMode;
 		}
 		str += ` ${ sampleRate }Hz`;
 		const outTags = [];
@@ -142,7 +143,7 @@ export class Library {
 			str += `<div class="code-cover">cover of ${ coverUrl ?
 				`<a href="${ coverUrl }" target="_blank">${ coverName }</a>` : `"${ coverName }"` }</div>`;
 		}
-		const sData = ` data-songdata='${ JSON.stringify({ ...songObj, inputMode: mode }) }'`;
+		const sData = ` data-songdata='${ JSON.stringify({ ...songObj, inputMode: effectiveMode }) }'`;
 		str += '<div class="code-buttons">';
 		if(codeMin || fileMin) {
 			str += `<button class="code-button code-load" data-type="minified"${ sData }${
@@ -158,11 +159,11 @@ export class Library {
 		}
 		str += '</div>';
 		if(codeMin) {
-			str += `<button class="code-text code-text-min" data-inputmode="${ mode }"${ sData }>${ this.escapeHTML(codeMin) }</button>`;
+			str += `<button class="code-text code-text-min" data-inputmode="${ effectiveMode || 'Bytebeat' }"${ sData }>${ this.escapeHTML(codeMin) }</button>`;
 		}
 		if(code) {
 			str += `<button class="code-text code-text-orig${ codeMin ? ' hidden' : '' }"${
-				sData } data-inputmode="${ mode || 'Bytebeat' }">${ this.escapeHTML(code) }</button>`;
+				sData } data-inputmode="${ effectiveMode || 'Bytebeat' }">${ this.escapeHTML(code) }</button>`;
 		}
 		return `<div class="entry${ rating ? ' star-' + rating : '' }">${ str }</div>`;
 	}
@@ -198,6 +199,8 @@ export class Library {
 		const waitElem = headerElem.querySelector('.loading-wait');
 		if(waitElem) waitElem.classList.remove('hidden');
 		const libName = containerElem.id.replace('library-', '');
+		const defaultMode = libName.startsWith('floatbeat') ? 'Floatbeat' :
+			libName.startsWith('funcbeat') ? 'Funcbeat' : 'Bytebeat';
 		const response = await fetch(this.pathLibrary + libName + '.gz');
 		const { status } = response;
 		if(status !== 200 && status !== 304) {
@@ -213,7 +216,7 @@ export class Library {
 		let libHTML = '';
 		const libArr = JSON.parse(ungzip(await response.arrayBuffer(), { to: 'string' }));
 		for(let i = 0, len = libArr.length; i < len; ++i) {
-			libHTML += this.generateEntryHTML(libArr[i], libName);
+			libHTML += this.generateEntryHTML(libArr[i], libName, libName === 'all' ? undefined : defaultMode);
 		}
 		if(!this.songs && libName === 'all') {
 			this.cacheSongs(libArr);
