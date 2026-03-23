@@ -3,16 +3,20 @@ class audioProcessor extends AudioWorkletProcessor {
 		super(...args);
 		this.audioSample = 0;
 		this.byteSample = 0;
+		this.divisorStorage = 0;
 		this.drawMode = 'Points';
 		this.errorDisplayed = true;
 		this.func = null;
 		this.getValues = null;
 		this.isFuncbeat = false;
 		this.isPlaying = false;
-		this.lastByteValue = [null, null];
-		this.lastFuncValue = [null, null];
+		this.lastByteValue = [null, null, null];
+		this.lastFuncValue = [null, null, null];
+		this.lastOutputChannels = 1;
 		this.lastTime = -1;
 		this.outValue = [0, 0];
+		this.outValueChannels = [0, 0, 0];
+		this.fftRawOutput = false;
 		this.playbackSpeed = 1;
 		this.sampleRate = 8000;
 		this.sampleRatio = 1;
@@ -69,6 +73,7 @@ class audioProcessor extends AudioWorkletProcessor {
 		}
 		let time = this.sampleRatio * this.audioSample;
 		let { byteSample } = this;
+		const divisor = Math.max(1, this.srDivisor || 1);
 		const drawBuffer = [];
 		const isDiagram = this.drawMode === 'Combined' || this.drawMode === 'Diagram';
 		for(let i = 0; i < chDataLen; ++i) {
@@ -77,12 +82,18 @@ class audioProcessor extends AudioWorkletProcessor {
 			const currentTime = Math.floor(time);
 			if(this.lastTime !== currentTime) {
 				let funcValue;
-				const currentSample = Math.floor(byteSample/this.srDivisor) * this.srDivisor;
+				const currentSample = Math.floor(byteSample);
+				const divisorMet = (((currentTime % divisor) + divisor) % divisor) === 0;
 				try {
 					if(this.isFuncbeat) {
-						funcValue = this.func(currentSample/this.sampleRate, this.sampleRate/this.srDivisor);
+						funcValue = this.func(currentSample / this.sampleRate, this.sampleRate);
 					} else {
 						funcValue = this.func(currentSample);
+					}
+					if(!divisorMet) {
+						funcValue = this.divisorStorage;
+					} else {
+						this.divisorStorage = funcValue;
 					}
 				} catch(err) {
 					if(this.errorDisplayed) {
@@ -96,44 +107,88 @@ class audioProcessor extends AudioWorkletProcessor {
 					}
 					funcValue = NaN;
 				}
-				funcValue = Array.isArray(funcValue) ? [funcValue[0], funcValue[1]] : [funcValue, funcValue];
+				const outputChannels = Array.isArray(funcValue) ? Math.max(0, Math.min(funcValue.length, 3)) : 1;
+				let values = Array.isArray(funcValue) ? funcValue.slice() : [funcValue];
+				let hasCenter = false;
+				if(Array.isArray(funcValue)) {
+					if(funcValue.length >= 3) {
+						values = [funcValue[0], funcValue[1], funcValue[2]];
+						hasCenter = true;
+					} else if(funcValue.length === 2) {
+						values = [funcValue[0], NaN, funcValue[1]];
+					} else if(funcValue.length === 1) {
+						values = [funcValue[0], NaN, funcValue[0]];
+					} else {
+						values = [NaN, NaN, NaN];
+					}
+				} else {
+					values = [funcValue, NaN, funcValue];
+				}
+				if(!hasCenter) {
+					this.lastFuncValue[1] = NaN;
+					this.lastByteValue[1] = NaN;
+					this.outValueChannels[1] = 0;
+				}
 				let hasValue = false;
-				let ch = 2;
-				while(ch--) {
+				const channelIndices = hasCenter ? [0, 1, 2] : [0, 2];
+				for(const ch of channelIndices) {
 					try {
-						funcValue[ch] = +funcValue[ch];
+						values[ch] = +values[ch];
 					} catch(err) {
-						funcValue[ch] = NaN;
+						values[ch] = NaN;
 					}
 					if(isDiagram) {
-						if(!isNaN(funcValue[ch])) {
-							this.outValue[ch] = this.getValues(funcValue[ch], ch);
+						if(!isNaN(values[ch])) {
+							this.outValueChannels[ch] = this.getValues(values[ch], ch);
 						} else {
 							this.lastByteValue[ch] = NaN;
 						}
 						hasValue = true;
 						continue;
 					}
-					if(funcValue[ch] === this.lastFuncValue[ch]) {
+					if(values[ch] === this.lastFuncValue[ch]) {
 						continue;
-					} else if(!isNaN(funcValue[ch])) {
-						this.outValue[ch] = this.getValues(funcValue[ch], ch);
+					} else if(!isNaN(values[ch])) {
+						this.outValueChannels[ch] = this.getValues(values[ch], ch);
 						hasValue = true;
 					} else if(!isNaN(this.lastFuncValue[ch])) {
 						this.lastByteValue[ch] = NaN;
 						hasValue = true;
 					}
 				}
+				if(hasCenter) {
+					const left = this.outValueChannels[0];
+					const center = this.outValueChannels[1];
+					const right = this.outValueChannels[2];
+					this.outValue[0] = left * (2 / 3) + center / 3;
+					this.outValue[1] = right * (2 / 3) + center / 3;
+				} else {
+					this.outValue[0] = this.outValueChannels[0];
+					this.outValue[1] = this.outValueChannels[2];
+				}
+				if(outputChannels !== this.lastOutputChannels) {
+					hasValue = true;
+				}
 				if(hasValue) {
-					drawBuffer.push({ t: byteSample, value: [...this.lastByteValue] });
+					drawBuffer.push({ t: byteSample, value: [...this.lastByteValue], channels: outputChannels });
 				}
 
 				byteSample += currentTime - this.lastTime;
-				this.lastFuncValue = funcValue;
+				this.lastFuncValue = values;
+				this.lastOutputChannels = outputChannels;
 				this.lastTime = currentTime;
 			}
-			chData[0][i] = this.outValue[0];
-			chData[1][i] = this.outValue[1];
+			if(this.fftRawOutput && chData[2]) {
+				chData[0][i] = this.outValueChannels[0];
+				chData[1][i] = this.outValueChannels[1];
+				chData[2][i] = this.outValueChannels[2];
+			} else {
+				chData[0][i] = this.outValue[0];
+				chData[1][i] = this.outValue[1];
+				if(chData[2]) {
+					chData[2][i] = this.outValueChannels[1];
+				}
+			}
 		}
 		if(Math.abs(byteSample) > Number.MAX_SAFE_INTEGER) {
 			this.resetTime();
@@ -151,7 +206,12 @@ class audioProcessor extends AudioWorkletProcessor {
 			data.drawBuffer = drawBuffer;
 			// Collect samples for FFT
 			for(const sample of drawBuffer) {
-				this.fftBuffer.push((sample.value[0] + sample.value[1]) / 2);
+				const left = sample.value[0];
+				const center = sample.value[1];
+				const right = sample.value[2];
+				const mix = !isNaN(right) ? (left + right) / 2 :
+					!isNaN(center) ? (left + center) / 2 : left;
+				this.fftBuffer.push(mix);
 			}
 			if(this.fftBuffer.length >= this.fftSize) {
 				data.fftData = this.fftBuffer.slice(-this.fftSize);
@@ -211,6 +271,37 @@ class audioProcessor extends AudioWorkletProcessor {
 				this.getValues = (funcValue, ch) =>
 					(this.lastByteValue[ch] = (funcValue + 128) & 255) / 127.5 - 1;
 				break;
+			case 'Bitbeat':
+				this.getValues = (funcValue, ch) =>
+					(this.lastByteValue[ch] = funcValue & 1 ? 192 : 64) / 127.5 - 1;
+				break;
+			case '2048':
+				this.getValues = (funcValue, ch) =>
+					(this.lastByteValue[ch] = Math.floor(funcValue / 8) & 255) / 127.5 - 1;
+				break;
+			case 'logmode':
+				this.getValues = (funcValue, ch) =>
+					(this.lastByteValue[ch] = (Math.log2(funcValue) * 32) & 255) / 127.5 - 1;
+				break;
+			case 'logHack':
+				this.getValues = (funcValue, ch) => {
+					const neg = (funcValue < 0) ? -32 : 32;
+					this.lastByteValue[ch] = (Math.log2(Math.abs(funcValue)) * neg) & 255;
+					return this.lastByteValue[ch] / 127.5 - 1;
+				};
+				break;
+			case 'logHack2':
+				this.getValues = (funcValue, ch) => {
+					const neg = funcValue < 0;
+					if(funcValue === 0) {
+						this.lastByteValue[ch] = 128;
+						return 0;
+					}
+					this.lastByteValue[ch] =
+						((Math.log2(Math.abs(funcValue)) * (neg ? -16 : 16)) + (neg ? -127 : 128)) & 255;
+					return this.lastByteValue[ch] / 127.5 - 1;
+				};
+				break;
 			case 'Floatbeat':
 			case 'Funcbeat':
 				this.getValues = (funcValue, ch) => {
@@ -240,6 +331,9 @@ class audioProcessor extends AudioWorkletProcessor {
 		if(data.audioFiles !== undefined) {
 			this.audioFiles = new Map(data.audioFiles);
 		}
+		if(data.fftRawOutput !== undefined) {
+			this.fftRawOutput = !!data.fftRawOutput;
+		}
 	}
 	sendData(data) {
 		this.port.postMessage(data);
@@ -251,9 +345,12 @@ class audioProcessor extends AudioWorkletProcessor {
 	}
 	resetValues() {
 		this.audioSample = 0;
-		this.lastByteValue = this.lastFuncValue = [null, null];
+		this.divisorStorage = 0;
+		this.lastByteValue = [null, null, null];
+		this.lastFuncValue = [null, null, null];
 		this.lastTime = -1;
 		this.outValue = [0, 0];
+		this.outValueChannels = [0, 0, 0];
 	}
 	setFunction(codeText) {
 		// Create shortened Math functions
@@ -288,9 +385,8 @@ class audioProcessor extends AudioWorkletProcessor {
 			"audioLength": (file = 0) => {
 				const audioFile = this.audioFiles.get(file);
 				return audioFile ? audioFile.data.length/audioFile.channels : 0;
-			},
-			
-			"linear": (x) => x, 
+			}, 
+				"linear": (x) => x, 
 
             "sine": (x, dir) => { switch (dir) { case "in": { return 1 - Math.cos((x * Math.PI) / 2); } case "out": { return Math.sin((x * Math.PI) / 2); } case "in out": { return -(Math.cos(Math.PI * x) - 1) / 2; } default: return 0; } }, 
 
