@@ -8,7 +8,7 @@
 	<meta name="author" content="SthephanShi">
 	<title>Bytebeat composer</title>
 	<!-- JSZip for TB3 project save/load (tb2/tb3)-->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.js"></script>
+	<script src="res/jszip.min.js"></script>
 
 	<link rel="canonical" href="https://dollchan.net/bytebeat/">
 	<link rel="shortcut icon" href="favicon.png">
@@ -70,17 +70,23 @@
 					<option value="Waveform">Waveform</option>
 					<option value="Diagram">Diagram</option>
 					<option value="Combined">Combined</option>
-					<option value="FFT_1024">FFT 1024</option>
+					<option value="FFT">FFT</option>
 				</select>
 				<select id="control-mode" class="control-select controls-grow" title="Sound mode">
 					<option value="Bytebeat" selected>Bytebeat</option>
 					<option value="Signed Bytebeat">Signed Bytebeat</option>
 					<option value="Floatbeat">Floatbeat</option>
+					<option value="Bitbeat">Bitbeat</option>
+					<option value="2048">2048</option>
+					<option value="logmode">logmode</option>
+					<option value="logHack">logHack</option>
+					<option value="logHack2">logHack2</option>
 					<option value="Funcbeat">Funcbeat</option>
 				</select>
 				<div class="controls-group controls-grow">
 					<input type="text" id="control-samplerate" class="control-text" title="Set the sample rate (in Hz) then press Enter">
 					<select id="control-samplerate-select" class="control-select" title="Select the sample rate (in Hz)">
+						<option value="ctx">AudioCtx</option>
 						<option value="1000">1000Hz</option>
 						<option value="8000">8000Hz</option>
 						<option value="11025">11025Hz</option>
@@ -145,6 +151,27 @@
 						Remove all loaded files
 					</label>
 					<div id="file-list"></div>
+					<div class="settings-block offline-export">
+						<div class="offline-export-row">
+							<label class="offline-export-field">
+								<span>Start</span>
+								<input id="offline-render-start" class="control-text" type="number" min="0" step="0.01" value="0">
+							</label>
+							<label class="offline-export-field">
+								<span>Duration</span>
+								<input id="offline-render-duration" class="control-text" type="number" min="0.01" step="0.01" value="10">
+							</label>
+							<label class="offline-export-field">
+								<span>Units</span>
+								<select id="offline-render-units" class="control-select">
+									<option value="seconds" selected>Seconds</option>
+									<option value="frames">Frames (t)</option>
+								</select>
+							</label>
+							<button id="offline-render-wav" class="control-button">Render WAV</button>
+						</div>
+						<div id="offline-render-status" class="offline-export-status"></div>
+					</div>
 
 					<summary class="ui-section-header">
 						<h1>TB3 Projects</h1> &ndash; Load complete projects
@@ -240,7 +267,6 @@
 						<li>Audio input functions (audioIN, audioLength)</li>
 						<li>Extended waveform generators (saw, tri, sq)</li>
 						<li>TB2/TB3 project format with embedded audio</li>
-						<li>Custom functions 2 (linear,sine,quad,cubic,quart,quint,expo,circ,back,elastic,bounce)</li>
 					</ul>
 					<div id="exotic-projects"></div>
 				</article>
@@ -251,13 +277,6 @@
 					<svg class="loading-wait hidden"><use xlink:href="#symbol-wait"></svg>
 				</summary>
 				<div id="library-funcbeat" class="library-container"></div>
-			</details>
-			<details class="library-content">
-				<summary class="library-header">
-					<h1>Recent</h1> &ndash; recently added, sorted by authors
-					<svg class="loading-wait hidden"><use xlink:href="#symbol-wait"></use></svg>
-				</summary>
-				<div id="library-recent" class="library-container"></div>
 			</details>
 			<details class="library-content">
 				<summary class="library-header">
@@ -281,7 +300,7 @@
 							<option value="Orange">Orange</option>
 							<option value="Purple">Purple</option>
 							<option value="Teal">Teal</option>
-							<option value="St. Patrick">St. Patrick</option>
+                            <option value="St. Patrick">St. Patrick</option>
 							<option value="Chasyxx">Chasyxx</option>
 							<option value="D3nschot">D3nschot</option>
 							<option value="Classic">Classic</option>
@@ -299,6 +318,70 @@
 						Code style
 					</label>
 					<label class="settings-block">
+						<input type="checkbox" id="control-fft-extra">
+						Enable extra FFT channels (L/C/R)
+					</label>
+					<label class="settings-block">
+						<input type="checkbox" id="control-fft-mono" checked>
+						Show mono FFT
+					</label>
+					<label class="settings-block">
+						<input type="checkbox" id="control-fft-fill">
+						Fill FFT to bottom
+					</label>
+					<label class="settings-block">
+						<select id="control-fft-blend" class="control-select" title="FFT blend mode">
+							<option value="source-over">Normal</option>
+							<option value="lighter" selected>Add</option>
+							<option value="difference">Difference</option>
+							<option value="subtract">Subtract</option>
+							<option value="multiply">Multiply</option>
+							<option value="screen">Screen</option>
+							<option value="overlay">Overlay</option>
+							<option value="darken">Darken</option>
+							<option value="lighten">Lighten</option>
+							<option value="color-dodge">Color Dodge</option>
+							<option value="color-burn">Color Burn</option>
+							<option value="hard-light">Hard Light</option>
+							<option value="soft-light">Soft Light</option>
+							<option value="exclusion">Exclusion</option>
+							<option value="hue">Hue</option>
+							<option value="saturation">Saturation</option>
+							<option value="color">Color</option>
+							<option value="luminosity">Luminosity</option>
+							<option value="xor">Xor</option>
+						</select>
+						FFT blend mode
+					</label>
+					<label class="settings-block">
+						<select id="control-audioctx-samplerate" class="control-select" title="Audio context sample rate">
+							<option value="8000">8000Hz</option>
+							<option value="11025">11025Hz</option>
+							<option value="16000">16000Hz</option>
+							<option value="22050">22050Hz</option>
+							<option value="32000">32000Hz</option>
+							<option value="44100">44100Hz</option>			
+							<option value="48000" selected>48000Hz</option>
+							<option value="96000">96000Hz</option>
+						</select>
+						AudioCtx sample rate
+					</label>
+					<label class="settings-block">
+						<select id="control-buffer-size" class="control-select" title="Audio context buffer size (approx)">
+							<option value="0" selected>Auto</option>
+							<option value="128">128</option>
+							<option value="256">256</option>
+							<option value="512">512</option>
+							<option value="1024">1024</option>
+							<option value="2048">2048</option>
+							<option value="4096">4096</option>
+							<option value="8192">8192</option>
+							<option value="16384">16384</option>
+							<option value="32768">32768</option>
+						</select>
+						AudioCtx buffer size
+					</label>
+					<label class="settings-block">
 						<select id="control-font-family" class="control-select" title="Editor font family">
 							<option value="default" selected>Default (Monospace)</option>
 							<option value="nk57-monospace">NK57-Monospace</option>
@@ -308,13 +391,14 @@
 							<option value="RobotoMono">RobotoMono</option>
 							<option value="Tomo">Tomo</option>
 							<option value="VCR">VCR</option>
-							<option value="System Bold">System Bold</option>
+                            <option value="System Bold">System Bold</option>
 							<option value="AlphabetNumberLoreFontV3Regular">AlphabetNumberLoreFontV3Regular</option>
 							<option value="Clasky_Sans">Clasky_Sans</option>
                             <option value="KlaskyCsupo">KlaskyCsupo</option>
                             <option value="AmongUsFilled-Regular">AmongUsFilled-Regular</option>
                             <option value="AmongUs-Regular">AmongUs-Regular</option>
 							<option value="In your face, joffrey!">In your face, joffrey!</option>
+							
 					</select>
 						Editor font
 					</label>
@@ -322,24 +406,53 @@
 						<input type="color" id="control-color-timecursor" class="control-color" title="Click to pick the time cursor color">
 						Time cursor color in the scope
 					</label>
-					<label class="settings-block">
-						<input type="color" id="control-color-waveform" class="control-color" title="Click to pick the Waveform color">
-						Waveform color in the scope.&nbsp;
-						<span id="control-color-waveform-info"></span>
-					</label>
-					<label class="settings-block">
-						<input type="color" id="control-color-diagram" class="control-color" title="Click to pick the Diagram color">
-						Diagram color in the scope.&nbsp;
-						<span id="control-color-diagram-info"></span>
-					</label>
-					<label class="settings-block">
-						<select id="control-color-stereo" class="control-select" title="Color channels for waveform and diagram">
-							<option value="0">Left=R, Right=G+B</option>
-							<option value="1" selected>Left=G, Right=R+B</option>
-							<option value="2">Left=B, Right=R+G</option>
-						</select>
-						Colors for stereo channels&nbsp;
-					</label>
+					<div class="settings-block">
+						<div class="settings-title">Waveform colors in the scope</div>
+						<div class="control-color-grid">
+							<label class="control-color-item">
+								<input type="color" id="control-color-waveform-left" class="control-color" title="Click to pick the left waveform color">
+								<span>Left</span>
+							</label>
+							<label class="control-color-item">
+								<input type="color" id="control-color-waveform-center" class="control-color" title="Click to pick the center waveform color">
+								<span>Center</span>
+							</label>
+							<label class="control-color-item">
+								<input type="color" id="control-color-waveform-right" class="control-color" title="Click to pick the right waveform color">
+								<span>Right</span>
+							</label>
+						</div>
+					</div>
+					<div class="settings-block">
+						<div class="settings-title">Diagram colors in the scope</div>
+						<div class="control-color-grid">
+							<label class="control-color-item">
+								<input type="color" id="control-color-diagram-left" class="control-color" title="Click to pick the left diagram color">
+								<span>Left</span>
+							</label>
+							<label class="control-color-item">
+								<input type="color" id="control-color-diagram-center" class="control-color" title="Click to pick the center diagram color">
+								<span>Center</span>
+							</label>
+							<label class="control-color-item">
+								<input type="color" id="control-color-diagram-right" class="control-color" title="Click to pick the right diagram color">
+								<span>Right</span>
+							</label>
+						</div>
+					</div>
+					<div class="settings-block">
+						<div class="settings-title">Mono colors in the scope</div>
+						<div class="control-color-grid">
+							<label class="control-color-item">
+								<input type="color" id="control-color-waveform-mono" class="control-color" title="Click to pick the mono waveform color">
+								<span>Waveform</span>
+							</label>
+							<label class="control-color-item">
+								<input type="color" id="control-color-diagram-mono" class="control-color" title="Click to pick the mono diagram color">
+								<span>Diagram</span>
+							</label>
+						</div>
+					</div>
 					<label class="settings-block">
 						<a href="bytebeat.php?manage">Manage library</a>
 					</label>
@@ -347,8 +460,7 @@
 			</details>
 			<footer>
 				<a class="link" href="/btb/" title="Bytebeat discussion threads" target="_blank" rel="noopener">Discussion board</a><br>
-				<a class="link" href="https://github.com/SthephanShinkufag/bytebeat-composer" title="Github repo" target="_blank" rel="noopener">Source code</a><br>
-				<a class="link" href="/crappy-FFT-vocoder/" target="_top">Do not press</a>
+				<a class="link" href="https://github.com/SthephanShinkufag/bytebeat-composer" title="Github repo" target="_blank" rel="noopener">Source code</a>
 			</footer>
 		</section>
 	</main>
@@ -401,11 +513,6 @@
 	<a id="downloader" class="hidden"></a>
 </body>
 </html>
-
-
-
-
-
 
 
 

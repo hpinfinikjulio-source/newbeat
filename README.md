@@ -11,8 +11,8 @@ Discussion threads: https://dollchan.net/btb/
 1. Install Node.js
 2. Run with npm:
 ```
-git clone https://github.com/SthephanShinkufag/bytebeat-composer.git
-cd bytebeat-composer
+git clone https://github.com/D3nschot/ThisBeat2.1.git
+cd ThisBeat2.1
 npm install
 npm start
 ```
