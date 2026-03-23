@@ -447,6 +447,9 @@ html[data-theme="Classic"] {
 	--focus: #614fdb;
 	--link: #89c2ff;
 	--link-hover: #3fe2e2 !important;
+	--library-seperator: linear-gradient(to right, #439157, #16202b);
+	--library-header: linear-gradient(to bottom, #204620, #0b170c);
+	--library-header-hover: linear-gradient(to bottom, #326c35, #192b15);
 }
 
 html[data-theme="Dollchan"] {
@@ -470,6 +473,9 @@ html[data-theme="Dollchan"] {
 	--focus: #614fdb;
 	--link: #89c2ff;
 	--link-hover: #3fe2e2 !important;
+	--library-seperator: linear-gradient(to right, #435a91, #16202b);
+	--library-header: linear-gradient(to bottom, #202c46, #0b0d17);
+	--library-header-hover: linear-gradient(to bottom, #32426c, #151b2b);
 }
 html[data-theme="ANoUserXD"] {
 	--button-hover-color: #c2dfff;
