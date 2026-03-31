@@ -97,6 +97,41 @@
 	font-weight: normal;
 	font-style: normal;
 }
+
+@font-face {
+	font-family: 'Mummy Halloween';
+	src: url('./Fonts/Mummy Halloween.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Heyam';
+	src: url('./Fonts/Heyam.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Pumpkins Are Cool';
+	src: url('./Fonts/Pumpkins Are Cool.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Sd Boo';
+	src: url('./Fonts/sdboo-webfont.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Varela Round';
+	src: url('./Fonts/varela-round.regular.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
 /* ==[ Themes ] =========================================================================================== */
 
 :root {
@@ -602,6 +637,32 @@ html[data-theme="ANoUserXD"] {
 	--editor-font-family: 'AlphabetNumberLoreFontV3Regular', monospace;
 	--editor-font-size: 1.0;
 }
+
+#editor-container[data-font="Mummy Halloween"] {
+	--editor-font-family: 'Mummy Halloween', monospace;
+	--editor-font-size: 1.0;
+}
+
+#editor-container[data-font="Heyam"] {
+	--editor-font-family: 'Heyam', monospace;
+	--editor-font-size: 1.0;
+}
+
+#editor-container[data-font="Pumpkins Are Cool"] {
+	--editor-font-family: 'Pumpkins Are Cool', monospace;
+	--editor-font-size: 1.0;
+}
+
+#editor-container[data-font="Sd Boo"] {
+	--editor-font-family: 'Sd Boo', monospace;
+	--editor-font-size: 1.0;
+}
+
+#editor-container[data-font="Varela Round"] {
+	--editor-font-family: 'Varela Round', monospace;
+	--editor-font-size: 1.0;
+}
+
 
 #editor-container[data-font="custom"] {
 	--editor-font-family: var(--custom-font-family, monospace);
