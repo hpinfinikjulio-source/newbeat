@@ -132,6 +132,27 @@
 	font-weight: normal;
 	font-style: normal;
 }
+
+@font-face {
+	font-family: 'Spooky Halloween';
+	src: url('./Fonts/SpookyHalloweenPersonalUse.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'baby blocks';
+	src: url('./Fonts/baby blocks.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Game Of Squids';
+	src: url('./Fonts/Game Of Squids.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
 /* ==[ Themes ] =========================================================================================== */
 
 :root {
@@ -663,6 +684,20 @@ html[data-theme="ANoUserXD"] {
 	--editor-font-size: 1.0;
 }
 
+#editor-container[data-font="Spooky Halloween"] {
+	--editor-font-family: 'Spooky Halloween', monospace;
+	--editor-font-size: 1.0;
+}
+
+#editor-container[data-font="Game Of Squids"] {
+	--editor-font-family: 'Game Of Squids', monospace;
+	--editor-font-size: 1.0;
+}
+
+#editor-container[data-font="baby blocks"] {
+	--editor-font-family: 'baby blocks', monospace;
+	--editor-font-size: 1.0;
+}
 
 #editor-container[data-font="custom"] {
 	--editor-font-family: var(--custom-font-family, monospace);
