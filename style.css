@@ -153,6 +153,13 @@
 	font-weight: normal;
 	font-style: normal;
 }
+
+@font-face {
+	font-family: 'sm286';
+	src: url('./Fonts/SuperMario286-18qg.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
 /* ==[ Themes ] =========================================================================================== */
 
 :root {
@@ -699,6 +706,10 @@ html[data-theme="ANoUserXD"] {
 	--editor-font-size: 1.0;
 }
 
+#editor-container[data-font="sm286"] {
+	--editor-font-family: 'sm286', monospace;
+	--editor-font-size: 1.0;
+}
 #editor-container[data-font="custom"] {
 	--editor-font-family: var(--custom-font-family, monospace);
 }
