@@ -164,12 +164,12 @@
 
 :root {
 	--button-hover-color: #badbff;
-	--canvas-border: linear-gradient(#400000, #FF0000) 1;
-	--canvas-button: linear-gradient(to bottom, #400000, #FF0000);
+	--canvas-border: linear-gradient(#ff0000, #400000) 1;
+	--canvas-button: linear-gradient(to bottom, #ff0000, #400000);
 	--canvas-button-color: #c5c8c6;
 	--canvas-button-hover: linear-gradient(to bottom, #FF8888, #FF0000) !important;
 	--code-author: #400000;
-	--code-button: linear-gradient(to bottom, #400000, #FF0000);
+	--code-button: linear-gradient(to bottom, #ff0000, #400000);
 	--code-button-border: #505760;
 	--code-button-hover: linear-gradient(to bottom, #FF8888, #FF0000);
 	--code-comment: #7d8799;
@@ -187,22 +187,22 @@
 	--editor-font-family: 'NK57 Monospace', monospace;
 	--editor-font-size: 1;
 	--custom-font-family: monospace;
-	--control-button: linear-gradient(to bottom, #400000, #FF0000);
-	--control-button-active: linear-gradient(to bottom, #400000, #FF0000);
+	--control-button: linear-gradient(to bottom, #ff0000, #400000);
+	--control-button-active: linear-gradient(to bottom, #ff0000, #400000);
 	--control-button-border: #5c636c;
-	--control-button-hover: linear-gradient(to bottom, #400000, #FF0000);
+	--control-button-hover: linear-gradient(to bottom, #ff0000, #400000);
 	--control-corners: 6px;
 	--control-size: 30px;
-	--control-text: linear-gradent(to top, #400000, #ff0000);
+	--control-text: linear-gradent(to top, #ff0000, #400000;
 	--control-text-hover: linear-gradient(to top, #FF8888, #FF0000);
-	--control-volume: linear-gradient(to bottom, #400000, #FF0000);
+	--control-volume: linear-gradient(to bottom, #ff0000, #400000);
 	--control-volume-hover: linear-gradient(to bottom, #FF8888, #FF0000);
 	--editor: #191c22;
 	--entry: #191c22;
-	--entry-border: linear-gradient(to right, #400000, #FF0000);
+	--entry-border: linear-gradient(to right, #ff0000, #400000);
 	--focus: #7fff00;
 	--font-size: 10.5pt;
-	--library-header: linear-gradient(to bottom, #400000, #FF0000);
+	--library-header: linear-gradient(to bottom, #ff0000, #400000);
 	--library-header-hover: linear-gradient(to bottom, #FF8888, #FF0000);
 	--library-header-hover-color: #94c7ff;
 	--link: #89c2ff;
