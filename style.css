@@ -207,7 +207,7 @@
 	--library-header-hover-color: #94c7ff;
 	--link: #89c2ff;
 	--link-hover: #00FFFF !important;
-	}
+}
 
 html[data-theme="Blue"] {
 	--canvas-border: linear-gradient(#94beff, #94beff) 1;
