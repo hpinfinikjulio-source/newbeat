@@ -43,6 +43,13 @@
 }
 
 @font-face {
+	font-family: 'VCR';
+	src: url('./Fonts/vcr.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
 	font-family: 'ticketing-regular';
 	src: url('./Fonts/ticketing.regular.ttf') format('truetype');
 	font-weight: normal;
