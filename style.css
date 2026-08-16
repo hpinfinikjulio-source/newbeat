@@ -392,32 +392,8 @@ html[data-theme="Teal"] {
 	--library-header-hover-color: #94fbff;
 	--link: #8efbff;
 }
-html[data-theme="St. Patrick"] {
-	--button-hover-color: #7CFF81;
-	--canvas-border: linear-gradient(#00ff00, #00ff00) 1;
-	--canvas-button: linear-gradient(to bottom, #00ae00, #002700);
-	--canvas-button-hover: linear-gradient(to bottom, #00df00, #004300) !important;
-	--code-author: #ffff00;
-	--code-button: linear-gradient(to bottom, #009300, #002200);
-	--code-button-border: #ffff00;
-	--code-button-hover: linear-gradient(to bottom, #00c100, #003800);
-	--control-button: linear-gradient(to bottom, #00c100, #004600);
-	--control-button-active: linear-gradient(to bottom, #008800, #003100);
-	--control-button-border: #ffff00;
-	--control-button-hover: linear-gradient(to bottom, #00db00, #003600);
-	--control-text: linear-gradient(to top, #007300, #003600);
-	--control-text-hover: linear-gradient(to top, #008d00, #004c00);
-	--control-volume: linear-gradient(to bottom, #00b700, #003b00);
-	--control-volume-hover: linear-gradient(to bottom, #00d700, #004900);
-	--editor: #ffff00;
-	--entry: #ffff00;
-	--entry-border: linear-gradient(to right, #00ff00, #ffff00);
-	--focus: #aafcff;
-	--library-header: linear-gradient(to bottom, #008000, #002800);
-	--library-header-hover: linear-gradient(to bottom, #009f00, #004a00);
-	--library-header-hover-color: #ffff00;
-	--link: #8efbff;
-}
+
+
 html[data-theme="Chasyxx"] {
 	--primary-bright: #458749;
 	--primary-medium: #2b542d;
@@ -566,6 +542,34 @@ html[data-theme="ANoUserXD"] {
 	--link: #89c2ff;
 	--link-hover: #ed88fb !important;
 }
+
+html[data-theme="KOIII7337"] {
+	--button-hover-color: #c2dfff;
+	--canvas-border: linear-gradient(#57ffff, #5730cc) 1;
+	--canvas-button: linear-gradient(to bottom, #eeeeee, #555555);
+	--canvas-button-color: #00ffc6;
+	--canvas-button-hover: linear-gradient(to bottom, #92ffec, #181fff) !important;
+	--code-button: linear-gradient(to bottom, #008f68, #006049);
+	--code-button-hover: linear-gradient(to bottom, #20dc79, #207850);
+	--control-button: linear-gradient(to bottom, #009090, #007f00);
+	--control-button-active: linear-gradient(to bottom, #2050aa, #104060);
+	--control-button-hover: linear-gradient(to bottom, #507080, #459040);
+	--control-corners: 5px;
+	--control-size: 25px;
+	--control-text: linear-gradient(to top, #1077bb, #054037);
+	--control-text-hover: linear-gradient(to top, #00cfcf, #00004f);
+	--control-volume: linear-gradient(to bottom, #00ffff, #0000ff);
+	--control-volume-hover: linear-gradient(to bottom, #4fffff, #00007f);
+	--editor: #1b1260;
+	--focus: #1b4f60;
+	--font-size: 10.25pt;
+	--library-header: linear-gradient(to bottom, #005080, #203020);
+	--library-header-hover: linear-gradient(to bottom, #0000ff, #000000);
+	--library-header-hover-color: #00ff7f;
+	--link: #ffff00;
+	--link-hover: #1f4fff !important;
+}
+
 
 #editor-container[data-theme="One Dark"] {
 	--code-definition: #abb2bf;
