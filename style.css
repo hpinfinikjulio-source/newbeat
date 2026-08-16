@@ -348,14 +348,59 @@ html[data-theme="Orange"] {
 	--link: #ff998e;
 }
 
+
+html[data-theme="Red"] {
+	--button-hover-color: #f1eaea;
+	--canvas-border: linear-gradient(#c20505, #d40c0c) 1;
+	--canvas-button: linear-gradient(to bottom, #801b1b, #4e0808);
+	--canvas-button-hover: linear-gradient(to bottom, #b31515, #3f0a0a) !important;
+	--code-button: linear-gradient(to bottom, #8b0d0d, #3b1616);
+	--code-button-hover: linear-gradient(to bottom, #d41c1c, #7a1414);
+	--control-button: linear-gradient(to bottom, #7c0505, #2b0404);
+	--control-button-active: linear-gradient(to bottom, #5a0f0f, #3b0505);
+	--control-button-hover: linear-gradient(to bottom, #b40202, #740b0b);
+	--control-text: linear-gradient(to top, #af1919, #4b0a0a);
+	--control-text-hover: linear-gradient(to top, #da2020, #5c2121);
+	--control-volume: linear-gradient(to bottom, #9b1515, #630a0a);
+	--control-volume-hover: linear-gradient(to bottom, #e74a4a, #750d0d);
+	--editor: #1f0404;
+	--focus: #ad0d0d;
+	--library-header: linear-gradient(to bottom, #5f1313, #2b0505);
+	--library-header-hover: linear-gradient(to bottom, #b11010, #4d1010);
+	--library-header-hover-color: #dadada;
+	--link: #ff0000;
+	--link-hover: #a04b4b !important;
+}
+
+html[data-theme="Pink"] {
+	--button-hover-color: #f5c;
+	--canvas-border: linear-gradient(#d45db6, #db02a5) 1;
+	--canvas-button-color: #7d3e7c;
+	--canvas-button: linear-gradient(to bottom, #ff63d8, #f23ac4);
+	--canvas-button-hover: linear-gradient(to bottom, #ffa6e9, #ff80df) !important;
+	--code-button: linear-gradient(to bottom, #ff40cf, #cc35a6);
+	--code-button-hover: linear-gradient(to bottom, #ff94e4, #d65cb8);
+	--control-button: linear-gradient(to bottom, #fa50cf, #b83d99);
+	--control-button-active: linear-gradient(to bottom, #fac5ed, #ffadeb);
+	--control-button-hover: linear-gradient(to bottom, #ed85d3, #fa7ada);
+	--control-text: linear-gradient(to top, #ab4190, #d44ab1);
+	--control-text-hover: linear-gradient(to top, #f086d5, #ba3f9b);
+	--control-volume: linear-gradient(to bottom, #ff40cf, #d61ca8);
+	--control-volume-hover: linear-gradient(to bottom, #ff7dde, #ff61d7);
+	--editor: #4d2142;
+	--focus: #823970;
+	--library-header: linear-gradient(to bottom, #e673c9, #c750a9);
+	--library-header-hover: linear-gradient(to bottom, #ff5ed7, #cc39a7);
+	--library-header-hover-color: #ffa1e7;
+	--link: #ff96dc;
+	--link-hover: #ff6bbf !important;
+}
 html[data-theme="Purple"] {
 	--canvas-border: linear-gradient(#c9b0ff, #c9b0ff) 1;
 	--canvas-button: linear-gradient(to bottom, #9b3c8b, #331833);
 	--canvas-button-hover: linear-gradient(to bottom, #c765bf, #331832) !important;
-	--code-author: #54366c;
 	--code-button: linear-gradient(to bottom, #5e345e, #221722);
 	--code-button-hover: linear-gradient(to bottom, #8a3c8a, #311f30);
-	--code-tags: #ac41a9;
 	--control-button: linear-gradient(to bottom, #845084, #321735);
 	--control-button-active: linear-gradient(to bottom, #603360, #1e0c1d);
 	--control-button-hover: linear-gradient(to bottom, #a54ca8, #280f28);
@@ -364,8 +409,6 @@ html[data-theme="Purple"] {
 	--control-volume: linear-gradient(to bottom, #985a9d, #331735);
 	--control-volume-hover: linear-gradient(to bottom, #ab68b4, #693f71);
 	--editor: #1a121c;
-	--entry: #1e1922;
-	--entry-border: linear-gradient(to right, #684386, #281a33);
 	--focus: #8289ff;
 	--library-header: linear-gradient(to bottom, #432046, #170b16);
 	--library-header-hover: linear-gradient(to bottom, #65326c, #2b152a);
@@ -378,28 +421,46 @@ html[data-theme="Teal"] {
 	--canvas-border: linear-gradient(#88fbff, #88fbff) 1;
 	--canvas-button: linear-gradient(to bottom, #44aeb5, #0d2728);
 	--canvas-button-hover: linear-gradient(to bottom, #60dfdf, #1f4344) !important;
-	--code-author: #266f71;
 	--code-button: linear-gradient(to bottom, #3e938e, #172222);
-	--code-button-border: #1d5c5e;
 	--code-button-hover: linear-gradient(to bottom, #59c1bc, #183839);
 	--control-button: linear-gradient(to bottom, #6cc1c1, #244648);
 	--control-button-active: linear-gradient(to bottom, #43888c, #153133);
-	--control-button-border: #387c7d;
 	--control-button-hover: linear-gradient(to bottom, #59dbe3, #183637);
 	--control-text: linear-gradient(to top, #357379, #153639);
 	--control-text-hover: linear-gradient(to top, #3e8d94, #1d4c50);
 	--control-volume: linear-gradient(to bottom, #57b7bd, #193b3e);
 	--control-volume-hover: linear-gradient(to bottom, #4dd7e0, #1f494d);
 	--editor: #061717;
-	--entry: #1f2b2b;
-	--entry-border: linear-gradient(to right, #2a7e80, #162b2b);
 	--focus: #aafcff;
 	--library-header: linear-gradient(to bottom, #2b8082, #0e2828);
 	--library-header-hover: linear-gradient(to bottom, #3c9fa2, #214a4a);
 	--library-header-hover-color: #94fbff;
 	--link: #8efbff;
 }
+html[data-theme="Yellow"] {
+	--button-hover-color: #ffff00;
+	--canvas-border: linear-gradient(#c9c9af, #aaaa7f) 1;
+	--canvas-button: linear-gradient(to bottom, #ffff0f, #38380d);
+	--canvas-button-color: #101000;
+	--canvas-button-hover: linear-gradient(to bottom, #ffff43, #6d6d13) !important;
+	--code-button: linear-gradient(to bottom, #c5c500, #222208);
+	--code-button-hover: linear-gradient(to bottom, #eb6d00, #4e4e14);
+	--control-button: linear-gradient(to bottom, #dfdf1e, #373711);
+	--control-button-active: linear-gradient(to bottom, #9c9c16, #29290d);
+	--control-button-hover: linear-gradient(to bottom, #f8f84d, #4e4e10);
+	--control-text: linear-gradient(to top, #b3b31f, #393815);
+	--control-text-hover: linear-gradient(to top, #e0e041, #585821);
+	--control-volume: linear-gradient(to bottom, #ecec28, #373711);
+	--control-volume-hover: linear-gradient(to bottom, #ffff6a, #4e4e10);
+	--editor: #171a00;
+	--focus: #fff82a;
+	--library-header: linear-gradient(to bottom, #c5c500, #1d1f06);
+	--library-header-hover: linear-gradient(to bottom, #f5f404, #3b390d);
+	--library-header-hover-color: #ffffa5;
+	--link: #ffff8e;
+	--link-hover: #948700 !important;
 
+}
 
 html[data-theme="Chasyxx"] {
 	--primary-bright: #458749;
