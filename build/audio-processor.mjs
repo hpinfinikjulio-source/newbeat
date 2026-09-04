@@ -320,6 +320,13 @@ class audioProcessor extends AudioWorkletProcessor {
 						return outValue;
 					};
 					break;
+			case 'Sinmode':
+					this.getValues = (funcValue, ch) => {
+						const outValue = Math.max(Math.min(Math.sin(funcValue * Math.PI / 128), 1), -1);
+						this.lastByteValue[ch] = Math.round((outValue + 1) * 127.5);
+						return outValue;
+					};
+					break;
 			case 'Inverted Bytebeat':
 				this.getValues = (funcValue, ch) =>
 					(this.lastByteValue[ch] = (funcValue + 1) * - 1 & 255) / 127.5 - 1;
