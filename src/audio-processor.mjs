@@ -288,11 +288,11 @@ class audioProcessor extends AudioWorkletProcessor {
 				break;
 			case 'tanhbeat':
 				this.getValues = (funcValue, ch) =>
-					(this.lastByteValue[ch] = Math.tanh(funcValue));
+					this.lastByteValue[ch] = Math.tanh(funcValue);
 				break;
 			case 'sinefloatbeat':
 				this.getValues = (funcValue, ch) =>
-					(this.lastByteValue[ch] = Math.sin(Math.min(Math.max(funcValue,-1),1)*Math.PI/2));
+					this.lastByteValue[ch] = Math.sin(Math.min(Math.max(funcValue,-1),1)*Math.PI/2);
 				break;
 			case 'logHack':
 				this.getValues = (funcValue, ch) => {
