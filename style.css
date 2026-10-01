@@ -175,7 +175,7 @@
 	--canvas-button: linear-gradient(to bottom, #9c00d5, #9c00d5);
 	--canvas-button-color: #c5c8c6;
 	--canvas-button-hover: linear-gradient(to bottom, #fff700, #fff700) !important;
-	--code-author: #9C1A0A;
+	--code-author: #9c00d5;
 	--code-button: linear-gradient(to bottom, #9c00d5, #9c00d5);
 	--code-button-border: #505760;
 	--code-button-hover: linear-gradient(to bottom, #fff700, #fff700);
@@ -216,6 +216,28 @@
 	--link-hover: #FF00FF !important;
 }
 
+html[data-theme="Corrupted"] {
+	--canvas-border: linear-gradient(#dd0067, #dd0067) 1;
+	--canvas-button: linear-gradient(to bottom, #dd0067, #dd0067);
+	--canvas-button-hover: linear-gradient(to bottom, #dd0067, #dd0067) !important;
+	--code-author: #dd0067;
+	--code-button: linear-gradient(to bottom, #dd0067, #dd0067);
+	--code-button-border: #5769a2;
+	--code-button-hover: linear-gradient(to bottom, #ff0077, #ff0077);
+	--control-button: linear-gradient(to bottom, #dd0067, #dd0067);
+	--control-button-active: linear-gradient(to bottom, #dd0067, #dd0067);
+	--control-button-border: #2c406d;
+	--control-button-hover: linear-gradient(to bottom, #ff0077, #ff0077);
+	--control-text: linear-gradient(to top, #dd0067, #dd0067);
+	--control-text-hover: linear-gradient(to top, #ff0077, #ff0077);
+	--control-volume: linear-gradient(to bottom, #dd0067, #dd0067);
+	--control-volume-hover: linear-gradient(to bottom, #ff0077, #ff0077);
+	--editor: #80003c;
+	--focus: #9782ff;
+	--library-header: linear-gradient(to bottom, #dd0067, #dd0067);
+	--library-header-hover: linear-gradient(to bottom, #ff0077, #ff0077);
+}
+	
 html[data-theme="Blue"] {
 	--canvas-border: linear-gradient(#94beff, #94beff) 1;
 	--canvas-button: linear-gradient(to bottom, #4567b0, #121726);
