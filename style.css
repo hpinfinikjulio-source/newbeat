@@ -171,6 +171,53 @@
 
 :root {
 	--button-hover-color: #badbff;
+	--canvas-border: linear-gradient(#fe5900, #a70000) 1;
+	--canvas-button: linear-gradient(to bottom, #fe5900, #a70000);
+	--canvas-button-color: #c5c8c6;
+	--canvas-button-hover: linear-gradient(to bottom, #ffd4b7, #f97916) !important;
+	--code-author: #9c00d5;
+	--code-button: linear-gradient(to bottom, #fe5900, #a70000);
+	--code-button-border: #505760;
+	--code-button-hover: linear-gradient(to bottom, #ffd4b7, #f97916);
+	--code-comment: #7d8799;
+	--code-definition: #b1b1ff;
+	--code-font: bold;
+	--code-keyword: #96cbfe;
+	--code-number: #ff8dfd;
+	--code-operator: #96cbfe;
+	--code-property: #ffd2a7;
+	--code-punctuation: #c5c8c6;
+	--code-string: #a8ff60;
+	--code-string2: #56b6c2;
+	--code-tags: #5cac87;
+	--code-variable: #c5c8c6;
+	--editor-font-family: 'NK57 Monospace', monospace;
+	--editor-font-size: 1;
+	--custom-font-family: monospace;
+	--control-button: linear-gradient(to bottom, #fe5900, #a70000);
+	--control-button-active: linear-gradient(to bottom, #fe5900, #a70000);
+	--control-button-border: #5c636c;
+	--control-button-hover: linear-gradient(to bottom, #ffd4b7, #f97916);
+	--control-corners: 6px;
+	--control-size: 30px;
+	--control-text: linear-gradient(to top, #fe5900, #a70000);
+	--control-text-hover: linear-gradient(to top, #ffd4b7, #f97916);
+	--control-volume: linear-gradient(to bottom, #fe5900, #a70000);
+	--control-volume-hover: linear-gradient(to bottom, #ffd4b7, #f97916);
+	--editor: #2f0040;
+	--entry: #191c22;
+	--entry-border: linear-gradient(to right, #fe5900, #a70000);
+	--focus: #614fdb;
+	--font-size: 10.5pt;
+	--library-header: linear-gradient(to bottom, #fe5900, #a70000);
+	--library-header-hover: linear-gradient(to bottom, #ffd4b7, #f97916);
+	--library-header-hover-color: #94c7ff;
+	--link: #89c2ff;
+	--link-hover: #fe5900 !important;
+}
+
+html[data-theme="Old"] {
+	--button-hover-color: #badbff;
 	--canvas-border: linear-gradient(#9c00d5, #9c00d5) 1;
 	--canvas-button: linear-gradient(to bottom, #9c00d5, #9c00d5);
 	--canvas-button-color: #c5c8c6;
@@ -215,6 +262,8 @@
 	--link: #89c2ff;
 	--link-hover: #FF00FF !important;
 }
+
+
 
 html[data-theme="Corrupted"] {
 	--canvas-border: linear-gradient(#dd0067, #dd0067) 1;
